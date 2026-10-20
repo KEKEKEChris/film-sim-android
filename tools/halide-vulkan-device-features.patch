@@ -1,18 +1,16 @@
-Let a phone's Vulkan device exist: size the queue-family block, and ask for less.
+Let a phone's Vulkan device exist, and say why it does not when it cannot.
 
-Two things kept vkCreateDevice from ever succeeding on Adreno 660 (Snapdragon 888, OnePlus 9),
-so the context never existed, copy_to_device returned -16, and the engine had no developer.
+Adreno 660 (Snapdragon 888, OnePlus 9) never created a device: vkCreateDevice refused, the
+context never existed, copy_to_device returned -16, and the engine had no developer at all.
 
-The queue-family query sized its block as sizeof(VkPhysicalDevice) — the 8-byte handle — and
-then had the driver write VkQueueFamilyProperties into it, about 24 bytes a family. A desktop
-allocator hands back enough slack to hide that; a phone's does not, so the family index the
-device is created with could be anything. The block is now sized for what goes in it.
-
-Halide also asks for exactly the features vkGetPhysicalDeviceFeatures reported, which desktop
-drivers honour and this one refuses outright once the Vulkan 1.2 8-bit storage struct rides in
-the pNext chain, whatever its fields say. The device is now asked for three ways — as reported,
-with the chain cut to 16-bit storage, then for nothing at all — and each refusal is reported
-with its code, so the next failure names itself instead of arriving as silence.
+Three things were wrong or silent. The queue-family query sized its block as
+sizeof(VkPhysicalDevice) — the 8-byte handle — and then had the driver write
+VkQueueFamilyProperties into it, about 24 bytes a family; a desktop allocator hands back
+enough slack to hide that, a phone's does not. The device is now asked for three ways: the
+features as reported, with the chain cut to 16-bit storage, then for nothing. And every step
+that used to report through debug() — compiled out of a release runtime — now reports through
+error(), so a failure names itself: the API version the device claims, the extensions Halide
+still insists on, and the VkResult of each refusal.
 
 diff --git a/src/runtime/vulkan_context.h b/src/runtime/vulkan_context.h
 --- a/src/runtime/vulkan_context.h
@@ -30,14 +28,43 @@ diff --git a/src/runtime/vulkan_context.h b/src/runtime/vulkan_context.h
              BlockStorage queue_properties_storage(user_context, queue_properties_storage_config);
              queue_properties_storage.resize(user_context, queue_properties_count);
  
-@@ -444,7 +446,30 @@
+@@ -335,7 +337,10 @@
+     uint32_t minor_version = VK_API_VERSION_MINOR(device_properties.apiVersion);
+     bool has_capability_v11 = (major_version >= 1) && (minor_version >= 1);  // supports >= v1.1
+     bool has_capability_v12 = (major_version >= 1) && (minor_version >= 2);  // supports >= v1.2
+-    debug(user_context) << "  found device compute capability v" << major_version << "." << minor_version << " ...\n";
++    // The version decides which extensions are still extensions — everything promoted to core
++    // is skipped. A phone that reports 1.0 here asks for extension names its driver no longer
++    // lists, and the validation below then fails with nothing to show for it.
++    error(user_context) << "Vulkan: device computes v" << major_version << "." << minor_version << "\n";
+ 
+     debug(user_context) << "  checking for required device extensions ...\n";
+     StringTable required_device_extensions;
+@@ -351,13 +356,14 @@
+ 
+     bool valid_device = vk_validate_required_extension_support(user_context, required_device_extensions, supported_device_extensions);
+     if (!valid_device) {
+-        debug(user_context) << "Vulkan: Unable to validate required extension support!\n";
++        error(user_context) << "Vulkan: Unable to validate required extension support!\n";
+         return halide_error_code_device_interface_no_device;
+     }
+ 
+-    debug(user_context) << "  found " << (uint32_t)required_device_extensions.size() << " required extensions for device!\n";
++    error(user_context) << "Vulkan: " << (uint32_t)required_device_extensions.size()
++                        << " required extensions for device\n";
+     for (uint32_t n = 0; n < required_device_extensions.size(); ++n) {
+-        debug(user_context) << "   required extension: " << required_device_extensions[n] << "\n";
++        error(user_context) << "Vulkan:   required: " << required_device_extensions[n] << "\n";
+     }
+ 
+     // enable all available optional extensions
+@@ -444,7 +450,28 @@
  
      VkResult result = vkCreateDevice(*physical_device, &device_create_info, alloc_callbacks, device);
      if (result != VK_SUCCESS) {
 -        debug(user_context) << "Vulkan: vkCreateDevice failed with return code: " << vk_get_error_name(result) << "\n";
 +        // A mobile driver can answer a feature query and then refuse the same bits back in a
-+        // device. Ask again with less each time, and say what it answered: a device that never
-+        // exists develops nothing, and without the code cannot be told from one never asked for.
++        // device. Ask again with less each time, and say what it answered.
 +        error(user_context) << "Vulkan: vkCreateDevice refused the reported features: "
 +                            << vk_get_error_name(result) << "\n";
 +        storage_16bit_ext.pNext = nullptr;
@@ -46,8 +73,7 @@ diff --git a/src/runtime/vulkan_context.h b/src/runtime/vulkan_context.h
 +    if (result != VK_SUCCESS) {
 +        error(user_context) << "Vulkan: vkCreateDevice refused 16-bit storage: "
 +                            << vk_get_error_name(result) << "\n";
-+        // Nothing is asked for now — no feature, no extension, no layer. A kernel that needs one
-+        // says so when it runs; this only has to exist.
++        // Nothing is asked for now — no feature, no extension, no layer.
 +        device_create_info.pNext = nullptr;
 +        device_create_info.pEnabledFeatures = nullptr;
 +        device_create_info.enabledExtensionCount = 0;
