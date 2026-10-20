@@ -1,16 +1,15 @@
-Let a phone's Vulkan device exist, and say why it does not when it cannot.
+Let a phone's Vulkan device exist: 8-bit storage is optional in 1.1, not required.
 
-Adreno 660 (Snapdragon 888, OnePlus 9) never created a device: vkCreateDevice refused, the
-context never existed, copy_to_device returned -16, and the engine had no developer at all.
+Adreno 660 (Snapdragon 888, OnePlus 9) reports Vulkan 1.1 — the 1.3 in vkjson is the loader's,
+not the driver's — and does not offer VK_KHR_8bit_storage, which only became core in 1.2.
+Halide required it for every 1.1 device, so validation failed before vkCreateDevice was ever
+called: the context never existed, copy_to_device returned -16, and the engine had no developer.
+8-bit storage is now optional, where a driver that has it still gets it.
 
-Three things were wrong or silent. The queue-family query sized its block as
-sizeof(VkPhysicalDevice) — the 8-byte handle — and then had the driver write
-VkQueueFamilyProperties into it, about 24 bytes a family; a desktop allocator hands back
-enough slack to hide that, a phone's does not. The device is now asked for three ways: the
-features as reported, with the chain cut to 16-bit storage, then for nothing. And every step
-that used to report through debug() — compiled out of a release runtime — now reports through
-error(), so a failure names itself: the API version the device claims, the extensions Halide
-still insists on, and the VkResult of each refusal.
+Also fixes the queue-family block, which was sized as sizeof(VkPhysicalDevice) — the 8-byte
+handle — while the driver wrote VkQueueFamilyProperties into it, about 24 bytes a family. And
+the steps that used to report through debug(), compiled out of a release runtime, now report
+through error(), so the next failure names itself instead of arriving as silence.
 
 diff --git a/src/runtime/vulkan_context.h b/src/runtime/vulkan_context.h
 --- a/src/runtime/vulkan_context.h
@@ -58,7 +57,7 @@ diff --git a/src/runtime/vulkan_context.h b/src/runtime/vulkan_context.h
      }
  
      // enable all available optional extensions
-@@ -444,7 +450,28 @@
+@@ -444,7 +450,27 @@
  
      VkResult result = vkCreateDevice(*physical_device, &device_create_info, alloc_callbacks, device);
      if (result != VK_SUCCESS) {
@@ -73,7 +72,6 @@ diff --git a/src/runtime/vulkan_context.h b/src/runtime/vulkan_context.h
 +    if (result != VK_SUCCESS) {
 +        error(user_context) << "Vulkan: vkCreateDevice refused 16-bit storage: "
 +                            << vk_get_error_name(result) << "\n";
-+        // Nothing is asked for now — no feature, no extension, no layer.
 +        device_create_info.pNext = nullptr;
 +        device_create_info.pEnabledFeatures = nullptr;
 +        device_create_info.enabledExtensionCount = 0;
@@ -88,3 +86,29 @@ diff --git a/src/runtime/vulkan_context.h b/src/runtime/vulkan_context.h
          return halide_error_code_device_interface_no_device;
      }
  
+
+diff --git a/src/runtime/vulkan_extensions.h b/src/runtime/vulkan_extensions.h
+--- a/src/runtime/vulkan_extensions.h
++++ b/src/runtime/vulkan_extensions.h
+@@ -198,9 +198,11 @@
+         VK_KHR_STORAGE_BUFFER_STORAGE_CLASS_EXTENSION_NAME};  // promoted to core in v1.1
+     const uint32_t before_v1p1_ext_count = sizeof(before_v1p1_ext_table) / sizeof(before_v1p1_ext_table[0]);
+ 
++    // 8-bit storage is core in 1.2 and only an extension in 1.1, where a driver need not offer
++    // it: Adreno 660 (Vulkan 1.1, Snapdragon 888) does not, so requiring it kept the device from
++    // ever being created. It is offered as optional below, where a driver that has it still gets it.
+     const char *before_v1p2_ext_table[] = {
+-        before_v1p1_ext_table[0],
+-        VK_KHR_8BIT_STORAGE_EXTENSION_NAME};  // promoted to core in v1.2
++        before_v1p1_ext_table[0]};
+     const uint32_t before_v1p2_ext_count = sizeof(before_v1p2_ext_table) / sizeof(before_v1p2_ext_table[0]);
+ 
+     uint32_t required_ext_count = 0;
+@@ -225,6 +227,7 @@
+ 
+     const char *before_v1p2_ext_table[] = {
+         before_v1p1_ext_table[0],
++        VK_KHR_8BIT_STORAGE_EXTENSION_NAME,            //< promoted to core in v1.2, optional in 1.1
+         "VK_KHR_portability_subset",                   //< requires v1.1, always optional, necessary for running under Molten (aka Vulkan on Mac)
+         VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME,     //< promoted to core in v1.2
+         VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME};  //< promoted to core in v1.2
