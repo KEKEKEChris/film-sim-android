@@ -41,8 +41,9 @@ env:
 
 jobs:
   # ---------------------------------------------------------------------------------------------
-  # The Halide SDK: the pinned submodule with the Vulkan patches, against LLVM 21. The longest step
-  # (1-2 h cold) and the one worth caching — it changes only when the pin or a patch changes.
+  # The Halide SDK: the pinned submodule with the Vulkan patches, against LLVM 21. Measured at
+  # about six minutes cold on a stock runner (1978 build targets), so the cache buys little time
+  # and mainly keeps the build honest about what changed.
   # ---------------------------------------------------------------------------------------------
   halide:
     runs-on: ubuntu-24.04
@@ -230,11 +231,22 @@ jobs:
       - name: Swift SDK for Android
         run: |
           set -euo pipefail
-          # The bundle carries its own name, so `swift sdk install` lands it at
-          # ~/.swiftpm/swift-sdks/swift-<version>-RELEASE_android.artifactbundle — which is exactly
-          # the name tools/build-android-engine.sh looks for.
-          swift sdk install "$SWIFT_SDK_URL"
+          # `swift sdk install <url>` demands --checksum, and swift.org publishes a checksum per
+          # release rather than a stable URL for it. Installing from a local bundle sidesteps that
+          # without pinning a hash that moves with every release. The bundle carries its own name,
+          # so it lands at ~/.swiftpm/swift-sdks/swift-<version>-RELEASE_android.artifactbundle —
+          # which is exactly what tools/build-android-engine.sh looks for.
+          curl -fSL "$SWIFT_SDK_URL" -o /tmp/android-sdk.tar.gz
+          ls -l /tmp/android-sdk.tar.gz
+          mkdir -p /tmp/swiftsdk
+          tar -xzf /tmp/android-sdk.tar.gz -C /tmp/swiftsdk
+          BUNDLE="$(find /tmp/swiftsdk -maxdepth 2 -name '*.artifactbundle' | head -1)"
+          test -n "$BUNDLE" || { echo "no .artifactbundle in the tarball"; find /tmp/swiftsdk -maxdepth 2; exit 1; }
+          echo "Bundle: $BUNDLE"
+          swift sdk install "$BUNDLE"
           swift sdk list
+          swift sdk list | grep -qx "swift-${SWIFT_VERSION}-RELEASE_android" \
+            || { echo "SDK installed under another name; the engine script will not find it"; exit 1; }
 
       - name: Engine and app
         env:
