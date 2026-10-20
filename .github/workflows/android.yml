@@ -83,10 +83,11 @@ jobs:
           sudo apt-get update
           # libclang-*-dev carries the libclang*.a archives that ClangTargets.cmake names; without
           # it Halide's find_package(Clang) fails on a missing libclangBasic.a. polly is one of
-          # their own link-time dependencies.
+          # their own link-time dependencies. liblld-*-dev is what answers Halide's WebAssembly
+          # check, which reads LLD's CMake package rather than the lld binary.
           sudo apt-get install -y --no-install-recommends \
             llvm-${LLVM_MAJOR}-dev clang-${LLVM_MAJOR} lld-${LLVM_MAJOR} \
-            libclang-${LLVM_MAJOR}-dev libpolly-${LLVM_MAJOR}-dev \
+            libclang-${LLVM_MAJOR}-dev libpolly-${LLVM_MAJOR}-dev liblld-${LLVM_MAJOR}-dev \
             libvulkan-dev ninja-build cmake libxml2-dev libffi-dev zlib1g-dev \
             libdigest-sha-perl rsync
 
