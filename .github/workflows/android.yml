@@ -1,0 +1,251 @@
+name: Android
+
+# Builds the Android app: the Halide kernels, the codecs, the engine, then the Flutter editor.
+# Nothing in here has run before — upstream CI builds macOS only and no Android package was ever
+# published. The first green run is the milestone; treat later runs as routine.
+
+on:
+  workflow_dispatch:
+    inputs:
+      artifact:
+        description: 'apk (debug-signed, for a phone) or appbundle (Play)'
+        type: choice
+        options: [apk, appbundle]
+        default: apk
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/android.yml'
+      - 'flutter/**'
+      - 'Sources/**'
+      - 'tools/**'
+      - 'Package.swift'
+      - 'version.env'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: '3.41.7'
+  SWIFT_VERSION: '6.3.3'
+  LLVM_MAJOR: '21'
+  # The Swift SDK for Android is built against NDK LTS r30, so the codecs, the engine and Gradle all
+  # use that one NDK rather than Flutter's default.
+  NDK_RELEASE: 'r30'
+  NDK_ZIP: 'https://dl.google.com/android/repository/android-ndk-r30-Linux.zip'
+  SWIFT_SDK_URL: 'https://download.swift.org/swift-6.3.3-release/android-sdk/swift-6.3.3-RELEASE/swift-6.3.3-RELEASE_android.artifactbundle.tar.gz'
+
+jobs:
+  # ---------------------------------------------------------------------------------------------
+  # The Halide SDK: the pinned submodule with the Vulkan patches, against LLVM 21. The longest step
+  # (1-2 h cold) and the one worth caching — it changes only when the pin or a patch changes.
+  # ---------------------------------------------------------------------------------------------
+  halide:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 350
+    outputs:
+      pin: ${{ steps.pin.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Pin
+        id: pin
+        run: echo "sha=$(git rev-parse HEAD:third_party/Halide)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore Halide
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: build/halide-linux-install
+          key: halide-${{ steps.pin.outputs.sha }}-llvm${{ env.LLVM_MAJOR }}-${{ hashFiles('tools/halide-*.patch') }}
+
+      - name: LLVM ${{ env.LLVM_MAJOR }}
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends wget gnupg ca-certificates lsb-release
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key \
+            | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc >/dev/null
+          echo "deb http://apt.llvm.org/noble/ llvm-toolchain-noble-${LLVM_MAJOR} main" \
+            | sudo tee /etc/apt/sources.list.d/llvm.list
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            llvm-${LLVM_MAJOR}-dev clang-${LLVM_MAJOR} lld-${LLVM_MAJOR} \
+            libvulkan-dev ninja-build cmake libxml2-dev libffi-dev zlib1g-dev \
+            libdigest-sha-perl rsync
+
+      - name: Halide
+        if: steps.cache.outputs.cache-hit != 'true'
+        env:
+          LLVM_ROOT: /usr/lib/llvm-${{ env.LLVM_MAJOR }}
+        run: |
+          # The script copies the pin out of the submodule, so the submodule has to be here.
+          git submodule update --init --depth 1 third_party/Halide
+          export PATH="/usr/lib/llvm-${LLVM_MAJOR}/bin:$PATH"
+          tools/build-halide-linux.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: halide-install
+          path: build/halide-linux-install
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------------------------
+  # The still codecs and FFmpeg, cross-compiled for arm64-v8a. The script pins its own versions and
+  # downloads its own sources, so this only rebuilds when the script or the NDK changes.
+  # ---------------------------------------------------------------------------------------------
+  codecs:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Restore codecs
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: build/android-deps
+          key: codecs-${{ env.NDK_RELEASE }}-${{ hashFiles('tools/build-android-codecs.sh') }}
+
+      - name: NDK ${{ env.NDK_RELEASE }}
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake ninja-build pkg-config autoconf automake libtool nasm yasm \
+            wget unzip rsync python3
+          curl -fSL -o /tmp/ndk.zip "$NDK_ZIP"
+          unzip -qo /tmp/ndk.zip -d /tmp
+          NDK_REV="$(sed -n 's/^Pkg\.Revision[[:space:]]*=[[:space:]]*//p' /tmp/android-ndk-${NDK_RELEASE}/source.properties)"
+          echo "NDK revision $NDK_REV"
+          sudo mkdir -p "$ANDROID_HOME/ndk/$NDK_REV"
+          sudo cp -a /tmp/android-ndk-${NDK_RELEASE}/. "$ANDROID_HOME/ndk/$NDK_REV/"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/$NDK_REV" >> "$GITHUB_ENV"
+          echo "FOTUFILM_ANDROID_NDK_VERSION=$NDK_REV" >> "$GITHUB_ENV"
+
+      - name: Codecs
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          test -d "$ANDROID_NDK_HOME" || { echo "NDK missing at $ANDROID_NDK_HOME"; exit 1; }
+          tools/build-android-codecs.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-deps
+          path: build/android-deps/arm64
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------------------------
+  # The engine and the app. JDK 17, the Android SDK, Flutter, and a swift.org toolchain with its
+  # Android SDK — the SDK version must match the toolchain exactly, and Xcode's Swift cannot read
+  # it. LLVM stays installed because the AOT generator loads libHalide.so, which links libLLVM.
+  # ---------------------------------------------------------------------------------------------
+  android:
+    needs: [halide, codecs]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            wget gnupg ca-certificates lsb-release cmake ninja-build rsync python3 libdigest-sha-perl
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key \
+            | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc >/dev/null
+          echo "deb http://apt.llvm.org/noble/ llvm-toolchain-noble-${LLVM_MAJOR} main" \
+            | sudo tee /etc/apt/sources.list.d/llvm.list
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends llvm-${LLVM_MAJOR} clang-${LLVM_MAJOR}
+
+      - name: NDK ${{ env.NDK_RELEASE }}
+        run: |
+          curl -fSL -o /tmp/ndk.zip "$NDK_ZIP"
+          unzip -qo /tmp/ndk.zip -d /tmp
+          NDK_REV="$(sed -n 's/^Pkg\.Revision[[:space:]]*=[[:space:]]*//p' /tmp/android-ndk-${NDK_RELEASE}/source.properties)"
+          echo "NDK revision $NDK_REV"
+          sudo mkdir -p "$ANDROID_HOME/ndk/$NDK_REV"
+          sudo cp -a /tmp/android-ndk-${NDK_RELEASE}/. "$ANDROID_HOME/ndk/$NDK_REV/"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/$NDK_REV" >> "$GITHUB_ENV"
+          echo "FOTUFILM_ANDROID_NDK_VERSION=$NDK_REV" >> "$GITHUB_ENV"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: halide-install
+          path: build/halide-linux-install
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: android-deps
+          path: build/android-deps/arm64
+
+      - name: Swift ${{ env.SWIFT_VERSION }}
+        run: |
+          set -euo pipefail
+          URL="https://download.swift.org/swift-${SWIFT_VERSION}-release/ubuntu2404/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu24.04.tar.gz"
+          echo "Swift toolchain: $URL"
+          curl -fSL "$URL" -o /tmp/swift.tar.gz
+          sudo mkdir -p /opt/swift
+          sudo tar -xzf /tmp/swift.tar.gz -C /opt/swift --strip-components=1
+          /opt/swift/usr/bin/swift --version
+          echo "/opt/swift/usr/bin" >> "$GITHUB_PATH"
+
+      - name: Swift SDK for Android
+        run: |
+          set -euo pipefail
+          # The bundle carries its own name, so `swift sdk install` lands it at
+          # ~/.swiftpm/swift-sdks/swift-<version>-RELEASE_android.artifactbundle — which is exactly
+          # the name tools/build-android-engine.sh looks for.
+          swift sdk install "$SWIFT_SDK_URL"
+          swift sdk list
+
+      - name: Engine and app
+        env:
+          HALIDE_ROOT: ${{ github.workspace }}/build/halide-linux-install
+          FOTUFILM_ANDROID_DEPS: ${{ github.workspace }}/build/android-deps
+          SWIFT_TOOLCHAIN: /opt/swift
+          SWIFT_SDK: swift-${{ env.SWIFT_VERSION }}-RELEASE_android
+          LD_LIBRARY_PATH: /usr/lib/llvm-21/lib
+          CXX: /usr/lib/llvm-21/bin/clang++
+        run: |
+          set -euo pipefail
+          test -d "$ANDROID_NDK_HOME" || { echo "NDK missing"; exit 1; }
+          test -f "$HALIDE_ROOT/include/Halide.h" || { echo "Halide missing"; exit 1; }
+          test -f "$FOTUFILM_ANDROID_DEPS/arm64/lib/libjpeg.a" || { echo "codecs missing"; exit 1; }
+          flutter config --no-analytics
+          if [[ "${{ inputs.artifact || 'apk' }}" == "appbundle" ]]; then
+            flutter/build-android.sh --appbundle
+          else
+            flutter/build-android.sh
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fotufilm-android
+          path: |
+            build/flutter-host/*.apk
+            build/flutter-host/*.aab
+          retention-days: 30
+          if-no-files-found: error
