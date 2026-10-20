@@ -1,0 +1,34 @@
+Let a phone's Vulkan device exist when its driver refuses the feature chain.
+
+Halide asks for exactly what vkGetPhysicalDeviceFeatures reported, which every desktop driver
+honours. Adreno 660 (Snapdragon 888, OnePlus 9) does not: vkCreateDevice returns an error as
+soon as the Vulkan 1.2 8-bit storage struct is in the pNext chain, whatever its fields say, so
+the context never exists, copy_to_device fails, and the engine has no developer on the phone at
+all. The device is now created three ways: as asked, then with the chain cut to 16-bit storage,
+then asking for nothing. A kernel that needs a feature it did not get fails when it runs, which
+the host reports; a device that never exists develops nothing and says only that it is missing.
+
+diff --git a/src/runtime/vulkan_context.h b/src/runtime/vulkan_context.h
+--- a/src/runtime/vulkan_context.h
++++ b/src/runtime/vulkan_context.h
+@@ -444,6 +444,20 @@
+ 
+     VkResult result = vkCreateDevice(*physical_device, &device_create_info, alloc_callbacks, device);
+     if (result != VK_SUCCESS) {
++        // A mobile driver can answer a feature query and then refuse the same bits back in a
++        // device. Adreno 660 declines the chain outright once the 1.2 8-bit storage struct rides
++        // in it, every field false or not. Ask again with the chain cut back to 16-bit storage,
++        // then asking for nothing at all, and let a kernel that misses a feature say so when it
++        // runs: the host can report that, where a device that never exists develops nothing.
++        storage_16bit_ext.pNext = nullptr;
++        result = vkCreateDevice(*physical_device, &device_create_info, alloc_callbacks, device);
++    }
++    if (result != VK_SUCCESS) {
++        device_create_info.pNext = nullptr;
++        device_create_info.pEnabledFeatures = nullptr;
++        result = vkCreateDevice(*physical_device, &device_create_info, alloc_callbacks, device);
++    }
++    if (result != VK_SUCCESS) {
+         debug(user_context) << "Vulkan: vkCreateDevice failed with return code: " << vk_get_error_name(result) << "\n";
+         return halide_error_code_device_interface_no_device;
+     }
