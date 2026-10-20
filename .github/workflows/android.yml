@@ -251,23 +251,42 @@ jobs:
           # swift-resources/ and ndk-sysroot. The published bundle does not necessarily name its
           # platform directory that, and the script has no fallback, so point the expected name at
           # whatever is actually there.
-          SDKROOT="$HOME/.swiftpm/swift-sdks/swift-${SWIFT_VERSION}-RELEASE_android.artifactbundle"
+          # tools/build-android-engine.sh resolves the SDK at a fixed path under
+          # ~/.swiftpm/swift-sdks and has no fallback, but `swift sdk install` in this toolchain
+          # puts it somewhere else. Locate the bundle, then make the expected path reach it, and
+          # give it the swift-android directory name the script also assumes.
+          SDKNAME="swift-${SWIFT_VERSION}-RELEASE_android.artifactbundle"
+          EXPECTED="$HOME/.swiftpm/swift-sdks/$SDKNAME"
+          if [ ! -d "$EXPECTED" ]; then
+            echo "not at $EXPECTED; looking for the bundle:"
+            ACTUAL="$(find "$HOME" /opt /usr/local /usr/lib -maxdepth 8 -type d -name "$SDKNAME" 2>/dev/null | head -1)"
+            if [ -z "$ACTUAL" ]; then
+              echo "no directory named $SDKNAME; any artifactbundle under HOME:"
+              find "$HOME" -maxdepth 8 -type d -name '*.artifactbundle' 2>/dev/null | head -10
+              ACTUAL="$(find "$HOME" -maxdepth 8 -type d -name '*.artifactbundle' 2>/dev/null | head -1)"
+            fi
+            test -n "$ACTUAL" || { echo "the bundle is nowhere findable"; exit 1; }
+            echo "found at: $ACTUAL"
+            mkdir -p "$HOME/.swiftpm/swift-sdks"
+            ln -sfn "$ACTUAL" "$EXPECTED"
+          fi
+          SDKROOT="$EXPECTED"
           echo "Bundle root: $SDKROOT"
           ls -la "$SDKROOT"
           if [ ! -d "$SDKROOT/swift-android" ]; then
             # The platform directory is whichever one carries swift-resources/ and the NDK setup
             # script; its published name is not the one the engine script expects.
-            INNER="$(find "$SDKROOT" -maxdepth 3 -name 'setup-android-sdk.sh' -printf '%h\n' 2>/dev/null | head -1)"
+            INNER="$(find "$SDKROOT/" -maxdepth 3 -name 'setup-android-sdk.sh' -printf '%h\n' 2>/dev/null | head -1)"
             if [ -z "$INNER" ]; then
-              INNER="$(find "$SDKROOT" -maxdepth 3 -type d -name 'swift-resources' -printf '%h\n' 2>/dev/null | head -1)"
+              INNER="$(find "$SDKROOT/" -maxdepth 3 -type d -name 'swift-resources' -printf '%h\n' 2>/dev/null | head -1)"
             fi
             if [ -z "$INNER" ]; then
               echo "cannot identify the platform directory; bundle contents:"
-              find "$SDKROOT" -maxdepth 2 | head -40
+              find "$SDKROOT/" -maxdepth 2 | head -40
               exit 1
             fi
             echo "Linking $INNER -> $SDKROOT/swift-android"
-            ln -s "$INNER" "$SDKROOT/swift-android"
+            ln -sfn "$INNER" "$SDKROOT/swift-android"
           fi
           ls -la "$SDKROOT/swift-android" | head -20
 
