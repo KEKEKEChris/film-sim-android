@@ -90,11 +90,9 @@ jobs:
           export PATH="/usr/lib/llvm-${LLVM_MAJOR}/bin:$PATH"
           tools/build-halide-linux.sh
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: halide-install
-          path: build/halide-linux-install
-          retention-days: 14
+      # The install travels to the `android` job through the cache, not an artifact. Artifacts count
+      # against the plan's storage quota — 500 MB on GitHub Free — and this install alone is most of
+      # it. The cache has its own 10 GB per repository and does not touch that quota.
 
   # ---------------------------------------------------------------------------------------------
   # The still codecs and FFmpeg, cross-compiled for arm64-v8a. The script pins its own versions and
@@ -137,11 +135,7 @@ jobs:
           test -d "$ANDROID_NDK_HOME" || { echo "NDK missing at $ANDROID_NDK_HOME"; exit 1; }
           tools/build-android-codecs.sh
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: android-deps
-          path: build/android-deps/arm64
-          retention-days: 14
+      # Also handed over by cache rather than artifact, for the same reason as the Halide install.
 
   # ---------------------------------------------------------------------------------------------
   # The engine and the app. JDK 17, the Android SDK, Flutter, and a swift.org toolchain with its
@@ -191,15 +185,19 @@ jobs:
           echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/$NDK_REV" >> "$GITHUB_ENV"
           echo "FOTUFILM_ANDROID_NDK_VERSION=$NDK_REV" >> "$GITHUB_ENV"
 
-      - uses: actions/download-artifact@v4
+      - name: Restore Halide
+        uses: actions/cache/restore@v4
         with:
-          name: halide-install
           path: build/halide-linux-install
+          key: halide-${{ needs.halide.outputs.pin }}-llvm${{ env.LLVM_MAJOR }}-${{ hashFiles('tools/halide-*.patch') }}
+          fail-on-cache-miss: true
 
-      - uses: actions/download-artifact@v4
+      - name: Restore codecs
+        uses: actions/cache/restore@v4
         with:
-          name: android-deps
-          path: build/android-deps/arm64
+          path: build/android-deps
+          key: codecs-${{ env.NDK_RELEASE }}-${{ hashFiles('tools/build-android-codecs.sh') }}
+          fail-on-cache-miss: true
 
       - name: Swift ${{ env.SWIFT_VERSION }}
         run: |
