@@ -247,6 +247,29 @@ jobs:
           swift sdk list
           swift sdk list | grep -qx "swift-${SWIFT_VERSION}-RELEASE_android" \
             || { echo "SDK installed under another name; the engine script will not find it"; exit 1; }
+          # tools/build-android-engine.sh hardcodes <bundle>/swift-android as the directory holding
+          # swift-resources/ and ndk-sysroot. The published bundle does not necessarily name its
+          # platform directory that, and the script has no fallback, so point the expected name at
+          # whatever is actually there.
+          SDKROOT="$HOME/.swiftpm/swift-sdks/swift-${SWIFT_VERSION}-RELEASE_android.artifactbundle"
+          echo "Bundle root: $SDKROOT"
+          ls -la "$SDKROOT"
+          if [ ! -d "$SDKROOT/swift-android" ]; then
+            # The platform directory is whichever one carries swift-resources/ and the NDK setup
+            # script; its published name is not the one the engine script expects.
+            INNER="$(find "$SDKROOT" -maxdepth 3 -name 'setup-android-sdk.sh' -printf '%h\n' 2>/dev/null | head -1)"
+            if [ -z "$INNER" ]; then
+              INNER="$(find "$SDKROOT" -maxdepth 3 -type d -name 'swift-resources' -printf '%h\n' 2>/dev/null | head -1)"
+            fi
+            if [ -z "$INNER" ]; then
+              echo "cannot identify the platform directory; bundle contents:"
+              find "$SDKROOT" -maxdepth 2 | head -40
+              exit 1
+            fi
+            echo "Linking $INNER -> $SDKROOT/swift-android"
+            ln -s "$INNER" "$SDKROOT/swift-android"
+          fi
+          ls -la "$SDKROOT/swift-android" | head -20
 
       - name: Engine and app
         env:
