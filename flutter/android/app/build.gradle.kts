@@ -10,7 +10,7 @@ plugins {
 }
 
 android {
-    namespace = "com.muastudio.fotufilm.flutter"
+    namespace = "com.kekekechris.latentimage"
     compileSdk = flutter.compileSdkVersion
     // CI installs one NDK and hands its version down, so the engine, the codecs and Gradle's own
     // CMake work all use the same toolchain. Without it, Flutter's default is used.
@@ -26,7 +26,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = setting("FOTUFILM_ANDROID_APPLICATION_ID") ?: "com.muastudio.fotufilm.flutter"
+        applicationId = setting("FOTUFILM_ANDROID_APPLICATION_ID") ?: "com.kekekechris.latentimage"
         // The engine is built for android-28 (the Swift SDK's lowest), for 64-bit ARM alone.
         minSdk = 28
         ndk { abiFilters += "arm64-v8a" }
