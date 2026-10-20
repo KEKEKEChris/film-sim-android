@@ -75,12 +75,18 @@ jobs:
       - name: LLVM ${{ env.LLVM_MAJOR }}
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
+          # The runner image carries a packages.microsoft.com source that answers 403, and a single
+          # failing source aborts `apt-get update` with exit 100. Nothing here needs it.
+          sudo rm -f /etc/apt/sources.list.d/*microsoft*
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends wget gnupg ca-certificates lsb-release
           wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key \
             | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc >/dev/null
           echo "deb http://apt.llvm.org/noble/ llvm-toolchain-noble-${LLVM_MAJOR} main" \
             | sudo tee /etc/apt/sources.list.d/llvm.list
+          # The runner image carries a packages.microsoft.com source that answers 403, and a single
+          # failing source aborts `apt-get update` with exit 100. Nothing here needs it.
+          sudo rm -f /etc/apt/sources.list.d/*microsoft*
           sudo apt-get update
           # libclang-*-dev carries the libclang*.a archives that ClangTargets.cmake names; without
           # it Halide's find_package(Clang) fails on a missing libclangBasic.a. polly is one of
@@ -131,6 +137,9 @@ jobs:
       - name: NDK ${{ env.NDK_RELEASE }}
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
+          # The runner image carries a packages.microsoft.com source that answers 403, and a single
+          # failing source aborts `apt-get update` with exit 100. Nothing here needs it.
+          sudo rm -f /etc/apt/sources.list.d/*microsoft*
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             cmake ninja-build pkg-config autoconf automake libtool nasm yasm \
@@ -182,6 +191,9 @@ jobs:
 
       - name: Toolchain
         run: |
+          # The runner image carries a packages.microsoft.com source that answers 403, and a single
+          # failing source aborts `apt-get update` with exit 100. Nothing here needs it.
+          sudo rm -f /etc/apt/sources.list.d/*microsoft*
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             wget gnupg ca-certificates lsb-release cmake ninja-build rsync python3 libdigest-sha-perl
@@ -189,6 +201,9 @@ jobs:
             | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc >/dev/null
           echo "deb http://apt.llvm.org/noble/ llvm-toolchain-noble-${LLVM_MAJOR} main" \
             | sudo tee /etc/apt/sources.list.d/llvm.list
+          # The runner image carries a packages.microsoft.com source that answers 403, and a single
+          # failing source aborts `apt-get update` with exit 100. Nothing here needs it.
+          sudo rm -f /etc/apt/sources.list.d/*microsoft*
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends llvm-${LLVM_MAJOR} clang-${LLVM_MAJOR}
 
