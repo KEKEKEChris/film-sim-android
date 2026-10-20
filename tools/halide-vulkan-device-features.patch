@@ -1,34 +1,64 @@
-Let a phone's Vulkan device exist when its driver refuses the feature chain.
+Let a phone's Vulkan device exist: size the queue-family block, and ask for less.
 
-Halide asks for exactly what vkGetPhysicalDeviceFeatures reported, which every desktop driver
-honours. Adreno 660 (Snapdragon 888, OnePlus 9) does not: vkCreateDevice returns an error as
-soon as the Vulkan 1.2 8-bit storage struct is in the pNext chain, whatever its fields say, so
-the context never exists, copy_to_device fails, and the engine has no developer on the phone at
-all. The device is now created three ways: as asked, then with the chain cut to 16-bit storage,
-then asking for nothing. A kernel that needs a feature it did not get fails when it runs, which
-the host reports; a device that never exists develops nothing and says only that it is missing.
+Two things kept vkCreateDevice from ever succeeding on Adreno 660 (Snapdragon 888, OnePlus 9),
+so the context never existed, copy_to_device returned -16, and the engine had no developer.
+
+The queue-family query sized its block as sizeof(VkPhysicalDevice) — the 8-byte handle — and
+then had the driver write VkQueueFamilyProperties into it, about 24 bytes a family. A desktop
+allocator hands back enough slack to hide that; a phone's does not, so the family index the
+device is created with could be anything. The block is now sized for what goes in it.
+
+Halide also asks for exactly the features vkGetPhysicalDeviceFeatures reported, which desktop
+drivers honour and this one refuses outright once the Vulkan 1.2 8-bit storage struct rides in
+the pNext chain, whatever its fields say. The device is now asked for three ways — as reported,
+with the chain cut to 16-bit storage, then for nothing at all — and each refusal is reported
+with its code, so the next failure names itself instead of arriving as silence.
 
 diff --git a/src/runtime/vulkan_context.h b/src/runtime/vulkan_context.h
 --- a/src/runtime/vulkan_context.h
 +++ b/src/runtime/vulkan_context.h
-@@ -444,6 +444,20 @@
+--- a/src/runtime/vulkan_context.h
++++ b/src/runtime/vulkan_context.h
+@@ -292,7 +292,9 @@
+ 
+             // allocate enough storage for the queue properties query results
+             BlockStorage::Config queue_properties_storage_config;
+-            queue_properties_storage_config.entry_size = sizeof(VkPhysicalDevice);
++            // Each entry is a VkQueueFamilyProperties, not a VkPhysicalDevice: the query writes
++            // about 24 bytes a family, and sizing the block for the 8-byte handle wrote past it.
++            queue_properties_storage_config.entry_size = sizeof(VkQueueFamilyProperties);
+             BlockStorage queue_properties_storage(user_context, queue_properties_storage_config);
+             queue_properties_storage.resize(user_context, queue_properties_count);
+ 
+@@ -444,7 +446,30 @@
  
      VkResult result = vkCreateDevice(*physical_device, &device_create_info, alloc_callbacks, device);
      if (result != VK_SUCCESS) {
+-        debug(user_context) << "Vulkan: vkCreateDevice failed with return code: " << vk_get_error_name(result) << "\n";
 +        // A mobile driver can answer a feature query and then refuse the same bits back in a
-+        // device. Adreno 660 declines the chain outright once the 1.2 8-bit storage struct rides
-+        // in it, every field false or not. Ask again with the chain cut back to 16-bit storage,
-+        // then asking for nothing at all, and let a kernel that misses a feature say so when it
-+        // runs: the host can report that, where a device that never exists develops nothing.
++        // device. Ask again with less each time, and say what it answered: a device that never
++        // exists develops nothing, and without the code cannot be told from one never asked for.
++        error(user_context) << "Vulkan: vkCreateDevice refused the reported features: "
++                            << vk_get_error_name(result) << "\n";
 +        storage_16bit_ext.pNext = nullptr;
 +        result = vkCreateDevice(*physical_device, &device_create_info, alloc_callbacks, device);
 +    }
 +    if (result != VK_SUCCESS) {
++        error(user_context) << "Vulkan: vkCreateDevice refused 16-bit storage: "
++                            << vk_get_error_name(result) << "\n";
++        // Nothing is asked for now — no feature, no extension, no layer. A kernel that needs one
++        // says so when it runs; this only has to exist.
 +        device_create_info.pNext = nullptr;
 +        device_create_info.pEnabledFeatures = nullptr;
++        device_create_info.enabledExtensionCount = 0;
++        device_create_info.ppEnabledExtensionNames = nullptr;
++        device_create_info.enabledLayerCount = 0;
++        device_create_info.ppEnabledLayerNames = nullptr;
 +        result = vkCreateDevice(*physical_device, &device_create_info, alloc_callbacks, device);
 +    }
 +    if (result != VK_SUCCESS) {
-         debug(user_context) << "Vulkan: vkCreateDevice failed with return code: " << vk_get_error_name(result) << "\n";
++        error(user_context) << "Vulkan: vkCreateDevice refused even a bare device: "
++                            << vk_get_error_name(result) << "\n";
          return halide_error_code_device_interface_no_device;
      }
+ 
