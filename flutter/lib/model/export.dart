@@ -10,7 +10,9 @@
 import 'dart:async';
 
 import 'package:file_selector/file_selector.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, kIsWeb;
+import 'package:flutter/services.dart'
+    show MethodChannel, MissingPluginException, PlatformException;
 
 import '../app/environment.dart';
 import '../engine/engine.dart';
@@ -493,13 +495,15 @@ class ExportTool {
       'path': destination,
     };
     _remember(batch: false);
-    return _queue(filename, [doc.handle], (engine, job) async {
+    final saved = await _queue(filename, [doc.handle], (engine, job) async {
       _report(job, 'Exporting $filename');
       final answer = await engine.callInBackground('export', request);
       return SavedExport(
           filename: answer.json['filename'] as String? ?? filename,
           path: answer.json['path'] as String? ?? destination);
     }, onStarted: onStarted);
+    if (saved != null) await _publish(saved);
+    return saved;
   }
 
   /// Export All: the photographs chosen in the strip, or all it shows, each with its own edit,
@@ -678,10 +682,53 @@ class ExportTool {
 
   // ── Destinations ──────────────────────────────────────────────────────────────────────────
 
+  /// Android has no save panel, and file_selector's `getSavePath` is unimplemented there — it
+  /// throws, which is what made Export appear to do nothing at all on a phone. The engine writes
+  /// into the app's own external directory instead, and `_publish` files the result into the
+  /// gallery once it exists. Exports.kt answers the directory.
+  static const _androidExports = MethodChannel('fotufilm/exports');
+
+  Future<String?> _androidDirectory() async {
+    try {
+      return await _androidExports.invokeMethod<String>('directory');
+    } on PlatformException {
+      return null;
+    } on MissingPluginException {
+      return null;
+    }
+  }
+
+  /// Files a finished export into the gallery, where a photograph is expected to be. A failure
+  /// here leaves the file in the export directory and is not reported: the export itself worked.
+  Future<void> _publish(SavedExport saved) async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
+    try {
+      await _androidExports.invokeMethod<String>(
+          'publish', {'path': saved.path, 'name': saved.filename, 'mime': _mimeOf(saved.filename)});
+    } catch (_) {
+      // Deliberately quiet — see above.
+    }
+  }
+
+  String _mimeOf(String filename) {
+    final ext = filename.contains('.') ? filename.split('.').last.toLowerCase() : '';
+    return switch (ext) {
+      'png' => 'image/png',
+      'tif' || 'tiff' => 'image/tiff',
+      'heic' || 'heif' => 'image/heic',
+      'webp' => 'image/webp',
+      _ => 'image/jpeg',
+    };
+  }
+
   Future<String?> _chooseFile(String filename, String type) async {
     if (fixedDirectory case final dir? when dir.isNotEmpty) return '$dir/$filename';
     // A browser saves to its downloads.
     if (kIsWeb) return filename;
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      final dir = await _androidDirectory();
+      return dir == null ? null : '$dir/$filename';
+    }
     final ext = filename.contains('.') ? filename.split('.').last : '';
     final location = await getSaveLocation(
       suggestedName: filename,
@@ -694,6 +741,7 @@ class ExportTool {
 
   Future<String?> _chooseFolder() async {
     if (fixedDirectory case final dir? when dir.isNotEmpty) return dir;
+    if (defaultTargetPlatform == TargetPlatform.android) return _androidDirectory();
     return getDirectoryPath(confirmButtonText: 'Export');
   }
 }
