@@ -213,7 +213,9 @@ public final class HostEngine {
         } else if FotufilmEngine.isHalideBackendAvailable {
             developer = HalideCPUDeveloper()
         } else {
-            throw Failure(description: "The Halide engine is not linked into this build.")
+            // A phone reaches the engine through Vulkan alone (`HostPlatform+Linux.swift`), so this
+            // says what actually failed rather than blaming the link, which is there either way.
+            throw Failure(description: "No GPU answered, and this build carries no CPU developer.")
         }
         HostFilmPacks.publish(filmPacks)
         loadedStocks = FilmStock.presets
