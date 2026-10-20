@@ -205,7 +205,7 @@ jobs:
           # failing source aborts `apt-get update` with exit 100. Nothing here needs it.
           sudo rm -f /etc/apt/sources.list.d/*microsoft*
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends llvm-${LLVM_MAJOR} clang-${LLVM_MAJOR}
+          sudo apt-get install -y --no-install-recommends llvm-${LLVM_MAJOR} clang
 
       - name: NDK ${{ env.NDK_RELEASE }}
         run: |
@@ -312,16 +312,20 @@ jobs:
           SWIFT_TOOLCHAIN: /opt/swift
           SWIFT_SDK: swift-${{ env.SWIFT_VERSION }}-RELEASE_android
           LD_LIBRARY_PATH: /usr/lib/llvm-21/lib
-          # generate-halide-aot-android.sh compiles its generator with ${CXX:-clang++}. The
-          # apt.llvm.org clang++ drives lld without the distribution's default library paths, so
-          # even -lpthread fails to resolve. Halide itself was built by the host GCC, so g++ is
-          # also the ABI-consistent choice for linking against libHalide.so.
-          CXX: g++
+          # CXX is deliberately absent. tools/build-android-engine.sh assigns CXX the NDK's
+          # aarch64 cross-compiler and then calls tools/generate-halide-aot-android.sh, which
+          # builds a host tool with ${CXX:-clang++}. That assignment is not exported, so on a
+          # machine without CXX in the environment the generator falls back to the host compiler
+          # and works. Putting CXX in the environment exports it, the cross-compiler reaches the
+          # generator, and it fails linking -lpthread. The host clang++ here is Ubuntu's clang,
+          # whose driver knows the distribution's library paths.
         run: |
           set -euo pipefail
           test -d "$ANDROID_NDK_HOME" || { echo "NDK missing"; exit 1; }
           test -f "$HALIDE_ROOT/include/Halide.h" || { echo "Halide missing"; exit 1; }
           test -f "$FOTUFILM_ANDROID_DEPS/arm64/lib/libjpeg.a" || { echo "codecs missing"; exit 1; }
+          echo "host clang++: $(command -v clang++ || echo none)"
+          clang++ --version | head -1 || true
           flutter config --no-analytics
           if [[ "${{ inputs.artifact || 'apk' }}" == "appbundle" ]]; then
             flutter/build-android.sh --appbundle
