@@ -312,7 +312,11 @@ jobs:
           SWIFT_TOOLCHAIN: /opt/swift
           SWIFT_SDK: swift-${{ env.SWIFT_VERSION }}-RELEASE_android
           LD_LIBRARY_PATH: /usr/lib/llvm-21/lib
-          CXX: /usr/lib/llvm-21/bin/clang++
+          # generate-halide-aot-android.sh compiles its generator with ${CXX:-clang++}. The
+          # apt.llvm.org clang++ drives lld without the distribution's default library paths, so
+          # even -lpthread fails to resolve. Halide itself was built by the host GCC, so g++ is
+          # also the ABI-consistent choice for linking against libHalide.so.
+          CXX: g++
         run: |
           set -euo pipefail
           test -d "$ANDROID_NDK_HOME" || { echo "NDK missing"; exit 1; }
