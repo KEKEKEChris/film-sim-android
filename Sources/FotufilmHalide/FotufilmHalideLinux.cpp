@@ -11,6 +11,11 @@
 #define FOTUFILM_HALIDE_LINUX_AOT 1
 #endif
 #if defined(FOTUFILM_HALIDE_LINUX_AOT)
+#if defined(__ANDROID__)
+// A phone has no console: stderr goes nowhere, so what the engine decides about its device has to
+// reach logcat. `adb logcat -s FotufilmHalide` then says why a phone developed on nothing.
+#include <android/log.h>
+#endif
 #if defined(FOTUFILM_HALIDE_ANDROID_AOT)
 #define FOTUFILM_HALIDE_HAS_CUDA 0
 #else
@@ -29,6 +34,8 @@
 #include "TransportFrameAot.h"
 #include "FotufilmTransport.h"
 #include <HalideBuffer.h>
+#include <cstdarg>
+#include <cstdio>
 #if FOTUFILM_HALIDE_HAS_CUDA
 #include <HalideRuntimeCuda.h>
 #endif
@@ -91,10 +98,29 @@ const AotVariant kVulkanVariants[] = {
 #undef FOTUFILM_AOT_ENTRY
 };
 
+// Where this build says what it decided about its device: logcat on a phone, stderr everywhere
+// else. Nothing here is on a hot path — it runs once, when the developer is first asked for.
+void log_note(const char *format, ...) {
+#if defined(__ANDROID__)
+    va_list to_logcat;
+    va_start(to_logcat, format);
+    __android_log_vprint(ANDROID_LOG_INFO, "FotufilmHalide", format, to_logcat);
+    va_end(to_logcat);
+#endif
+    va_list to_stderr;
+    va_start(to_stderr, format);
+    std::vfprintf(stderr, format, to_stderr);
+    va_end(to_stderr);
+    std::fputc('\n', stderr);
+}
+
 // Kernels report a failure and return its code; Halide's default handler would abort the app
 // before the engine could fall back to the CPU.
 void configure_error_handler() {
     static const auto previous = halide_set_error_handler([](void *, const char *message) {
+#if defined(__ANDROID__)
+        __android_log_print(ANDROID_LOG_ERROR, "FotufilmHalide", "%s", message);
+#endif
         std::fprintf(stderr, "Fotufilm Halide Linux runtime error: %s\n", message);
     });
     (void)previous;
@@ -109,13 +135,25 @@ const halide_device_interface_t *interface_for(Device device) {
 #endif
 }
 
-/// Whether the device takes a buffer: its driver loads, a device answers, and memory moves.
+/// Whether the device takes a buffer: its driver loads, a device answers, and memory moves. Each
+/// step that can fail says so, because a phone that develops on nothing has no other diagnosis.
 bool answers(Device device) {
+    const char *name = device == kCuda ? "cuda" : "vulkan";
+    const halide_device_interface_t *interface = interface_for(device);
+    if (!interface) {
+        log_note("%s: no device interface in this runtime", name);
+        return false;
+    }
     Buffer<float> probe(16);
     probe.fill(0.0f);
     probe.set_host_dirty();
-    if (probe.copy_to_device(interface_for(device)) != 0) return false;
+    const int error = probe.copy_to_device(interface);
+    if (error != 0) {
+        log_note("%s: copy_to_device failed (%d)", name, error);
+        return false;
+    }
     probe.device_free();
+    log_note("%s: answers", name);
     return true;
 }
 
@@ -188,7 +226,10 @@ Device pick_device() {
     if (!std::getenv("HL_VK_DEVICE_TYPE"))
         if (const char *type = preferred_vulkan_device_type())
             setenv("HL_VK_DEVICE_TYPE", type, 0);
-    return answers(kVulkan) ? kVulkan : kNone;
+    const bool vulkan = answers(kVulkan);
+    log_note("pick_device: requested '%s', vulkan %s",
+             wanted.empty() ? "(default)" : wanted.c_str(), vulkan ? "chosen" : "declined");
+    return vulkan ? kVulkan : kNone;
 }
 
 Device chosen_device() {
