@@ -52,7 +52,7 @@ class EditableField extends StatelessWidget {
             isDense: true,
             isCollapsed: true,
             border: InputBorder.none,
-            hintText: placeholder,
+            hintText: placeholder == null ? null : t(placeholder!),
             hintStyle: style.copyWith(color: palette.muted),
           ),
         ),
