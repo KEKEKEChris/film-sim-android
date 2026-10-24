@@ -3,6 +3,7 @@
 import 'package:flutter/widgets.dart';
 
 import '../kit/kit.dart';
+import '../../model/l10n.dart';
 import '../theme/theme.dart';
 
 class EmptyCanvas extends StatelessWidget {
@@ -18,7 +19,7 @@ class EmptyCanvas extends StatelessWidget {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Text('The engine could not start. $error',
+          child: Text('${t("The engine could not start.")} $error',
               textAlign: TextAlign.center, style: editorText(context, color: palette.muted)),
         ),
       );
@@ -28,7 +29,7 @@ class EmptyCanvas extends StatelessWidget {
         PillButton('Open image or video',
             variant: ButtonVariant.accent, onPressed: ready ? onOpen : null),
         const SizedBox(height: 8),
-        Text(ready ? 'or drop files here' : 'Loading films…',
+        Text(ready ? t('or drop files here') : t('Loading films…'),
             style: editorText(context, color: palette.muted)),
       ]),
     );
@@ -51,7 +52,7 @@ class OriginalBadge extends StatelessWidget {
               border: Border.all(color: const Color(0x35FFFFFF)),
               borderRadius: BorderRadius.circular(5),
             ),
-            child: Text('Original',
+            child: Text(t('Original'),
                 style: editorText(context, size: TextSizes.label, color: const Color(0xFFFFFFFF))),
           ),
         ),
@@ -147,7 +148,7 @@ class DropOverlay extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
             ),
             alignment: Alignment.center,
-            child: Text('Drop images to open', style: editorText(context, size: TextSizes.dialog)),
+            child: Text(t('Drop images to open'), style: editorText(context, size: TextSizes.dialog)),
           ),
         ),
       ),

@@ -7,6 +7,7 @@ import 'package:flutter/widgets.dart';
 import '../../model/editor.dart';
 import '../../model/presets.dart';
 import '../kit/kit.dart';
+import '../../model/l10n.dart';
 import '../theme/theme.dart';
 import 'dialogs.dart';
 
@@ -103,7 +104,7 @@ class _SectionsDialogState extends State<_SectionsDialog> {
             ),
             if (replaces) ...[
               const SizedBox(height: 4),
-              Text('Replaces the preset of this name.',
+              Text(t('Replaces the preset of this name.'),
                   style: editorText(context, size: TextSizes.label, color: palette.muted)),
             ],
             const SizedBox(height: 16),

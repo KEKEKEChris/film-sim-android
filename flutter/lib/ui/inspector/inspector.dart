@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import '../../model/editor.dart';
 import '../../model/panel_layout.dart';
 import '../kit/kit.dart';
+import '../../model/l10n.dart';
 import '../theme/theme.dart';
 import '../workspace/panel_layout.dart';
 import 'controls.dart';
@@ -68,7 +69,7 @@ class _EditorInspectorState extends State<EditorInspector> {
               HelpButton(detail: _help[editor.panel], size: 16),
               if (editor.panel == Panel.crop || editor.panel == Panel.selective) ...[
                 const SizedBox(width: 6),
-                Text('Canvas tool',
+                Text(t('Canvas tool'),
                     style: editorText(context,
                         size: TextSizes.label, color: Palette.of(context).muted)),
               ],

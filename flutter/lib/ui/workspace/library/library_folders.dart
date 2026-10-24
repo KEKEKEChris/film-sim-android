@@ -4,6 +4,7 @@
 import 'package:flutter/widgets.dart';
 
 import '../../../model/editor.dart';
+import '../../../model/l10n.dart';
 import '../../../model/library_model.dart';
 import '../../kit/kit.dart';
 import '../../theme/theme.dart';
@@ -109,7 +110,7 @@ class _LibraryFoldersState extends State<LibraryFolders> {
           padding: const EdgeInsets.fromLTRB(16, 0, 8, 0),
           child: Row(children: [
             Expanded(
-              child: Text('Library',
+              child: Text(t('Library'),
                   style: editorText(context, size: TextSizes.body, weight: FontWeight.w700)),
             ),
             // A folder of scanned negatives is added as one.

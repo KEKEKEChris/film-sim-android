@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import '../../model/editor.dart';
 import '../../model/panel_layout.dart';
 import '../kit/kit.dart';
+import '../../model/l10n.dart';
 import '../theme/theme.dart';
 
 /// Collapses or expands the film library; in the compact layout it closes the film dock.
@@ -127,7 +128,7 @@ class _RailButtonState extends State<_RailButton> with PointerTint {
           child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
             AppIcon(widget.panel.icon, size: Metrics.icon, color: fg),
             const SizedBox(height: 3),
-            Text(widget.panel.title,
+            Text(t(widget.panel.title),
                 style: editorText(context,
                     size: TextSizes.label, weight: FontWeight.w500, color: fg)),
           ]),

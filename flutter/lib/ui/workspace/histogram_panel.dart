@@ -8,6 +8,7 @@ import 'package:flutter/widgets.dart';
 import '../../model/catalogue.dart';
 import '../../model/histogram.dart';
 import '../kit/kit.dart';
+import '../../model/l10n.dart';
 import '../theme/theme.dart';
 
 class HistogramPanel extends StatefulWidget {
@@ -205,7 +206,7 @@ class _HistogramPanelState extends State<HistogramPanel> {
       SizedBox(
         height: 14,
         child: Row(children: [
-          Expanded(child: Text('Pixel count', style: muted)),
+          Expanded(child: Text(t('Pixel count'), style: muted)),
           for (final (i, (label, color)) in view.legend.indexed) ...[
             if (i > 0) const SizedBox(width: 8),
             Text(label, style: muted.copyWith(color: colors[color])),

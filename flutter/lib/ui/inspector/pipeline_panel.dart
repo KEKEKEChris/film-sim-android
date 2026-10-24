@@ -3,6 +3,7 @@
 import 'package:flutter/widgets.dart';
 
 import '../kit/kit.dart';
+import '../../model/l10n.dart';
 import '../theme/theme.dart';
 import 'controls.dart';
 
@@ -12,7 +13,7 @@ List<Widget> pipelinePanel(InspectorControls c) {
     Builder(
       builder: (context) => Padding(
         padding: const EdgeInsets.only(top: 16, bottom: 10),
-        child: Text('Pipeline',
+        child: Text(t('Pipeline'),
             style: editorText(context, size: TextSizes.heading, weight: FontWeight.w600)),
       ),
     ),

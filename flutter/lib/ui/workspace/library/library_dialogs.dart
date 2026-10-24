@@ -3,6 +3,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+import '../../../model/l10n.dart';
 import '../../../model/library_model.dart';
 import '../../kit/kit.dart';
 import '../../theme/theme.dart';
@@ -102,7 +103,7 @@ class _RenameDialogState extends State<_RenameDialog> {
               variant: ButtonVariant.accent, onPressed: problem == null ? _submit : null),
         ],
         children: [
-          Text('Name', style: editorText(context, size: TextSizes.label, color: palette.muted)),
+          Text(t('Name'), style: editorText(context, size: TextSizes.label, color: palette.muted)),
           const SizedBox(height: 4),
           Container(
             height: 28,

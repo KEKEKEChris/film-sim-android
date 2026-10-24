@@ -7,6 +7,7 @@ import 'package:flutter/widgets.dart';
 import '../../../app/host_window.dart';
 import '../../../model/editor.dart';
 import '../../../model/library_files.dart';
+import '../../../model/l10n.dart';
 import '../../../model/library_model.dart';
 import '../../kit/kit.dart';
 import '../../theme/theme.dart';
@@ -394,15 +395,15 @@ class _Empty extends StatelessWidget {
         padding: const EdgeInsets.all(24),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           if (filtered) ...[
-            Text('No photos match.', style: text),
+            Text(t('No photos match.'), style: text),
             const SizedBox(height: 12),
             Row(mainAxisSize: MainAxisSize.min, children: [PillButton('Clear Filters', onPressed: onClear)]),
           ] else if (folders)
-            Text('No photos in this folder.', style: text)
+            Text(t('No photos in this folder.'), style: text)
           else ...[
             AppIcon('library', size: 36, color: palette.muted),
             const SizedBox(height: 12),
-            Text('Add a folder to browse, rate and open its photos.', style: text),
+            Text(t('Add a folder to browse, rate and open its photos.'), style: text),
             const SizedBox(height: 12),
             Row(mainAxisSize: MainAxisSize.min, children: [
               PillButton('Add Folder', variant: ButtonVariant.accent, onPressed: onAdd),
@@ -437,7 +438,7 @@ class _Notice extends StatelessWidget {
         const SizedBox(width: 12),
         GestureDetector(
           onTap: onDismiss,
-          child: Text('Dismiss',
+          child: Text(t('Dismiss'),
               style: editorText(context, color: ink).copyWith(decoration: TextDecoration.underline)),
         ),
       ]),
