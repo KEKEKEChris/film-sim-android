@@ -320,17 +320,20 @@ class CommandState {
       };
 }
 
-/// What commands open that need the window: the file chooser, the export and settings dialogs.
+/// What commands open that need the window: the photo picker and the file chooser, the export
+/// and settings dialogs.
 class CommandActions {
   const CommandActions({
-    required this.open,
+    required this.openGallery,
+    required this.openFiles,
     required this.export,
     required this.copySettings,
     required this.savePreset,
     required this.managePresets,
     required this.importLooks,
   });
-  final VoidCallback open, export, copySettings, savePreset, managePresets, importLooks;
+  final VoidCallback openGallery, openFiles, export, copySettings, savePreset, managePresets,
+      importLooks;
 }
 
 /// Commands that edit a focused text field rather than the photograph.
@@ -576,7 +579,7 @@ class EditorCommands {
   }
 
   static final Map<String, void Function(EditorCommands c)> _fixed = {
-    'open': (c) => c.actions.open(),
+    'open': (c) => c.actions.openFiles(),
     'useSamplePhoto': (c) => HostWindow.samplePhoto().then((path) {
           if (path != null) c.editor.openPaths([path]);
         }),

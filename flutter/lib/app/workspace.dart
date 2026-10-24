@@ -55,7 +55,8 @@ class _WorkspaceState extends State<Workspace> {
   late final commands = EditorCommands(
     editor,
     CommandActions(
-      open: _open,
+      openGallery: _open,
+      openFiles: _openFiles,
       export: _export,
       copySettings: () => showCopySettingsDialog(context, editor),
       savePreset: () => showSavePresetDialog(context, editor),
@@ -132,12 +133,24 @@ class _WorkspaceState extends State<Workspace> {
     if (!open) _focus.requestFocus();
   }
 
+  /// The gallery: what someone tapping a photo app expects, and what the toolbar's button and
+  /// the drop target offer first.
   Future<void> _open() async {
     if (!editor.ready) return;
-    final files = await chooseFiles([
+    await _adopt(await choosePhotos());
+  }
+
+  /// The file manager instead: a camera's RAW on an SD card, a scan in Downloads — anything no
+  /// gallery has indexed.
+  Future<void> _openFiles() async {
+    if (!editor.ready) return;
+    await _adopt(await chooseFiles([
       fileType('Images', imageExtensions),
       fileType('Videos', videoExtensions),
-    ]);
+    ]));
+  }
+
+  Future<void> _adopt(List<XFile> files) async {
     if (!kIsWeb && files.isNotEmpty) HostWindow.noteRecent([for (final f in files) f.path]);
     // One file brings its folder into the strip.
     await editor.strip.open([for (final f in files) _photo(f)]);

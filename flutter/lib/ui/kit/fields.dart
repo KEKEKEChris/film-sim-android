@@ -4,6 +4,7 @@ import 'package:flutter/material.dart'
         TextSelectionThemeData;
 import 'package:flutter/widgets.dart';
 
+import '../../model/l10n.dart';
 import '../theme/theme.dart';
 import 'buttons.dart';
 import 'focus.dart';
@@ -69,7 +70,7 @@ class FieldLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Row(children: [
         Flexible(
-          child: Text(label,
+          child: Text(t(label),
               overflow: TextOverflow.ellipsis,
               style: editorText(context, size: TextSizes.label,
                   color: Palette.of(context).text.withValues(alpha: .75))),
@@ -125,7 +126,7 @@ class SwitchRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            Text(label, style: editorText(context, size: TextSizes.label)),
+            Text(t(label), style: editorText(context, size: TextSizes.label)),
           ]),
         ),
         ),
@@ -202,7 +203,7 @@ class PickerField<T> extends StatelessWidget {
                   color: palette.gray100, borderRadius: BorderRadius.circular(Metrics.radius)),
               child: Row(children: [
                 Expanded(
-                  child: Text(current?.label ?? placeholder ?? '',
+                  child: Text(t(current?.label ?? placeholder ?? ''),
                       overflow: TextOverflow.ellipsis, style: editorText(context)),
                 ),
                 AppIcon('chevronDown', size: 16),
@@ -225,9 +226,9 @@ class InfoRow extends StatelessWidget {
   Widget build(BuildContext context) => Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: editorText(context, size: TextSizes.label)),
+          Text(t(label), style: editorText(context, size: TextSizes.label)),
           Flexible(
-            child: Text(value,
+            child: Text(t(value),
                 textAlign: TextAlign.right,
                 overflow: TextOverflow.ellipsis,
                 style: editorText(context, size: TextSizes.label, color: Palette.of(context).muted)),
@@ -242,6 +243,6 @@ class Note extends StatelessWidget {
   final String text;
 
   @override
-  Widget build(BuildContext context) => Text(text,
+  Widget build(BuildContext context) => Text(t(text),
       style: editorText(context, size: TextSizes.label, color: Palette.of(context).muted, height: 1.45));
 }

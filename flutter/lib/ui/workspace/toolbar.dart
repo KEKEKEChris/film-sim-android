@@ -48,7 +48,10 @@ class EditorToolbar extends StatelessWidget {
             const SizedBox(width: 8),
             // A browser reads no folders, so it has no library.
             if (libraryFilesAvailable) _LibraryButton(editor: editor),
-            ImportMenu(editor: editor, onImage: commands.actions.open),
+            ImportMenu(
+                editor: editor,
+                onGallery: commands.actions.openGallery,
+                onFiles: commands.actions.openFiles),
           ]),
         ),
         // The library hides the photograph's controls.
@@ -99,7 +102,11 @@ extension on EditorToolbar {
         child: Row(children: [
           if (titlebar) const SizedBox(width: Metrics.trafficLightInset),
           if (libraryFilesAvailable) _LibraryButton(editor: editor, size: Metrics.compactTouch),
-          ImportMenu(editor: editor, onImage: commands.actions.open, size: Metrics.compactTouch),
+          ImportMenu(
+              editor: editor,
+              onGallery: commands.actions.openGallery,
+              onFiles: commands.actions.openFiles,
+              size: Metrics.compactTouch),
           const Spacer(),
           _whileEditing(_EditGroup(commands: commands, compact: true)),
         ]),

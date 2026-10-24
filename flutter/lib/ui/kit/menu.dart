@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../model/l10n.dart';
 import '../theme/theme.dart';
 import 'buttons.dart';
 import 'icons.dart';
@@ -169,8 +170,12 @@ class _MenuRowState extends State<_MenuRow> with PointerTint {
             }
           : null,
       label: widget.back
-          ? 'Back to ${item.label}'
-          : [item.label, ?item.description, ?item.detail].join(', '),
+          ? '${t("Back to")} ${t(item.label)}'
+          : [
+              t(item.label),
+              if (item.description != null) t(item.description!),
+              if (item.detail != null) t(item.detail!),
+            ].join(', '),
       selected: item.checked,
       radius: 5,
       child: Container(
@@ -193,17 +198,17 @@ class _MenuRowState extends State<_MenuRow> with PointerTint {
             ],
             Expanded(
               child: item.description == null
-                  ? Text(item.label, style: editorText(context, size: TextSizes.menu))
+                  ? Text(t(item.label), style: editorText(context, size: TextSizes.menu))
                   : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(item.label, style: editorText(context, size: TextSizes.menu)),
+                      Text(t(item.label), style: editorText(context, size: TextSizes.menu)),
                       const SizedBox(height: 2),
-                      Text(item.description!,
+                      Text(t(item.description!),
                           style: editorText(context, size: TextSizes.label, color: palette.muted)),
                     ]),
             ),
             if (item.detail != null) ...[
               const SizedBox(width: 12),
-              Text(item.detail!, style: editorText(context, color: palette.muted)),
+              Text(t(item.detail!), style: editorText(context, color: palette.muted)),
             ],
             if (item.checked == true && item.selection == null) ...[
               const SizedBox(width: 8),

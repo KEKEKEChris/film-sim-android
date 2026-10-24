@@ -16,11 +16,14 @@ import 'debug/debug.dart';
 import 'model/catalogue.dart';
 import 'model/cef_profile.dart';
 import 'model/editor.dart';
+import 'model/l10n.dart';
 import 'ui/kit/icons.dart';
 import 'ui/workspace/picture.dart';
 
 Future<void> main(List<String> arguments) async {
   WidgetsFlutterBinding.ensureInitialized();
+  // The language is read before anything is drawn, so the first frame is already in it.
+  await L10n.instance.load();
   final (catalogue, _, _, settings) =
       await (Catalogue.load(), IconLibrary.load(), ColourConversion.load(), AppSettings.load())
           .wait;

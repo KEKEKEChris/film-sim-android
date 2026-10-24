@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import '../../model/app_dialogs.dart';
 import '../../model/editor.dart';
 import '../kit/kit.dart';
+import '../../model/l10n.dart';
 import '../theme/theme.dart';
 import 'film_pack_notice.dart';
 import 'plugins_dialog.dart';
@@ -136,7 +137,7 @@ class AppDialogCard extends StatelessWidget {
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.only(top: 4),
-                  child: Text(title,
+                  child: Text(t(title),
                       style: editorText(context, size: TextSizes.dialog, weight: FontWeight.w700)),
                 ),
               ),
@@ -205,22 +206,33 @@ class AlertCard extends StatelessWidget {
               child: AppIcon('warning', size: 20, color: palette.dark ? const Color(0xFFF5A623) : const Color(0xFFC77D00)),
             ),
           ),
-        Text(message, style: editorText(context, height: 1.5)),
+        Text(t(message), style: editorText(context, height: 1.5)),
       ],
     );
   }
 }
 
-/// A heading inside a dialog's pane (`.settings-pane h3`).
+/// A heading inside a dialog's pane (`.settings-pane h3`). With `divider`, a hairline above it
+/// separates the group that follows from the one before, which is what makes a long pane read as
+/// groups rather than as one list.
 class PaneHeading extends StatelessWidget {
-  const PaneHeading(this.text, {super.key});
+  const PaneHeading(this.text, {super.key, this.divider = false});
   final String text;
+  final bool divider;
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(top: 12),
-        child: Text(text, style: editorText(context, weight: FontWeight.w700)),
-      );
+  Widget build(BuildContext context) {
+    final heading = Text(t(text), style: editorText(context, weight: FontWeight.w700));
+    if (!divider) {
+      return Padding(padding: const EdgeInsets.only(top: 12), child: heading);
+    }
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      const SizedBox(height: 16),
+      Container(height: 1, color: Palette.of(context).text.withValues(alpha: .08)),
+      const SizedBox(height: 12),
+      heading,
+    ]);
+  }
 }
 
 /// A pane's muted note (`.medium-detail`).

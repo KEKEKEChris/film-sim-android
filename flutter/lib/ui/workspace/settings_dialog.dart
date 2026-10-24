@@ -7,6 +7,7 @@ import 'package:flutter/widgets.dart';
 import '../../model/editor.dart';
 import '../../model/film_packs.dart';
 import '../../model/film_suggestion.dart';
+import '../../model/l10n.dart';
 import '../../model/new_photo.dart';
 import '../kit/kit.dart';
 import '../theme/theme.dart';
@@ -73,7 +74,23 @@ class _SettingsDialogState extends State<SettingsDialog> {
     final suggestion = editor.filmSuggestion;
     final learned = suggestion.learned == null || suggestion.learned! > 0;
     return [
-      const PaneHeading('New Photos'),
+      // The language comes first: it is the one setting that changes what every other one is
+      // called, so a reader who cannot read the interface finds it before anything else.
+      const PaneHeading('Language'),
+      PickerField<AppLanguage>(
+        label: 'Language',
+        detail: 'Choose the language the editor speaks.',
+        value: L10n.instance.preference,
+        options: [
+          for (final language in AppLanguage.values)
+            PickerOption(language, L10n.instance.label(language)),
+        ],
+        onChanged: (language) {
+          L10n.instance.setPreference(language);
+        },
+      ),
+      const PaneNote('Follows the phone.'),
+      const PaneHeading('New Photos', divider: true),
       _SettingPicker(
         label: 'Starting Film',
         setting: 'startingFilm',
@@ -106,14 +123,14 @@ class _SettingsDialogState extends State<SettingsDialog> {
       ],
       if (editor.filmPacks.available) _FilmPacksSection(packs: editor.filmPacks),
       if (editor.updates.available) ...[
-        const PaneHeading('Updates'),
+        const PaneHeading('Updates', divider: true),
         _SettingSwitch(
             label: 'Check for Updates Automatically',
             setting: 'updateChecksAutomatically',
             settings: _settings),
         _SettingSwitch(label: 'Include Pre-releases', setting: 'updatePrereleases', settings: _settings),
       ],
-      const PaneHeading('Reset'),
+      const PaneHeading('Reset', divider: true),
       const SizedBox(height: 6),
       Align(
         alignment: Alignment.centerLeft,
@@ -184,7 +201,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
     final bitrates = exporter.videoBitrates;
     if (!playable) return const [];
     return [
-      const PaneHeading('Video'),
+      const PaneHeading('Video', divider: true),
       _SettingPicker(
         label: 'Playback Quality',
         setting: 'videoPlaybackQuality',
@@ -239,7 +256,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
       ),
       const PaneNote('Standard uses fast calibrated RMS noise, and Film lays the stock’s crystals '
           'at fixed places on the emulsion.'),
-      const PaneHeading('Halation'),
+      const PaneHeading('Halation', divider: true),
       _SettingPicker(
         label: title('halationModel'),
         setting: 'halationModel',
@@ -260,7 +277,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
       const PaneNote('Layered Transport simulates light moving through the film layers. In the '
           'browser, films with donor layers use Legacy. Estimated Halation Shape only affects '
           'Legacy.'),
-      const PaneHeading('Color Separation'),
+      const PaneHeading('Color Separation', divider: true),
       _SettingSlider(label: title('couplerReach'), setting: 'couplerReach', settings: _settings),
       _SettingSlider(
           label: 'Red–Green', setting: 'couplerRedGreen', follows: 'couplerReach', settings: _settings),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart' show MaterialApp, ThemeData;
 import 'package:flutter/widgets.dart';
 
 import '../model/editor.dart';
+import '../model/l10n.dart';
 import '../ui/theme/theme.dart';
 import 'environment.dart';
 import 'touch_scale.dart';
@@ -15,22 +16,29 @@ class FotufilmApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // The editor follows the system's appearance; FOTUFILM_APPEARANCE=light|dark overrides it
-    // (an environment variable on the desktop, a query parameter in a browser).
-    final forced = environment('FOTUFILM_APPEARANCE');
-    final dark = forced == null || forced.isEmpty
-        ? MediaQuery.platformBrightnessOf(context) == Brightness.dark
-        : forced == 'dark';
-    return MaterialApp(
-      title: 'Fotufilm',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(fontFamily: editorFont, useMaterial3: true),
-      // A phone draws everything larger, the menus and dialogs too (touch_scale.dart).
-      builder: (context, child) => TouchScale(child: child!),
-      home: PaletteScope(
-        palette: dark ? Palette.darkPalette : Palette.light,
-        child: Workspace(editor: editor),
-      ),
+    // A language change redraws everything below: every label is looked up as it is drawn, so
+    // nothing else has to know which language is in use.
+    return ValueListenableBuilder<int>(
+      valueListenable: L10n.instance.revision,
+      builder: (context, _, __) {
+        // The editor follows the system's appearance; FOTUFILM_APPEARANCE=light|dark overrides it
+        // (an environment variable on the desktop, a query parameter in a browser).
+        final forced = environment('FOTUFILM_APPEARANCE');
+        final dark = forced == null || forced.isEmpty
+            ? MediaQuery.platformBrightnessOf(context) == Brightness.dark
+            : forced == 'dark';
+        return MaterialApp(
+          title: 'Fotufilm',
+          debugShowCheckedModeBanner: false,
+          theme: ThemeData(fontFamily: editorFont, useMaterial3: true),
+          // A phone draws everything larger, the menus and dialogs too (touch_scale.dart).
+          builder: (context, child) => TouchScale(child: child!),
+          home: PaletteScope(
+            palette: dark ? Palette.darkPalette : Palette.light,
+            child: Workspace(editor: editor),
+          ),
+        );
+      },
     );
   }
 }

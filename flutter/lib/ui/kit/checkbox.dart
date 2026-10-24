@@ -2,6 +2,7 @@
 // label; the whole row takes the click.
 import 'package:flutter/widgets.dart';
 
+import '../../model/l10n.dart';
 import '../theme/theme.dart';
 import 'focus.dart';
 import 'icons.dart';
@@ -36,7 +37,7 @@ class CheckboxRow extends StatelessWidget {
             child: value ? AppIcon('check', size: 12, color: palette.onSelected) : null,
           ),
           const SizedBox(width: 8),
-          Flexible(child: Text(label, style: editorText(context))),
+          Flexible(child: Text(t(label), style: editorText(context))),
         ]),
       ),
       ),
