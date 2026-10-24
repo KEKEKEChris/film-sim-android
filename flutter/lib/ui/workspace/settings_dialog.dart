@@ -327,23 +327,19 @@ class _SettingPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final value = settings.get<Object>(setting);
+    // The label goes above the picker rather than beside it: a fixed-width picker in a row left
+    // the name a few pixels wide on a phone, which wrapped it one letter a line.
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(children: [
-        Expanded(child: Text(label, style: editorText(context))),
-        const SizedBox(width: 12),
-        SizedBox(
-          width: 220,
-          child: PickerField<String?>(
-            value: value is String ? value : null,
-            options: options,
-            onChanged: (next) {
-              settings.set(setting, next);
-              onSet?.call(next);
-            },
-          ),
-        ),
-      ]),
+      child: PickerField<String?>(
+        label: label,
+        value: value is String ? value : null,
+        options: options,
+        onChanged: (next) {
+          settings.set(setting, next);
+          onSet?.call(next);
+        },
+      ),
     );
   }
 }
