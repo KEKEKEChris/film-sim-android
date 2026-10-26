@@ -9,6 +9,10 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+dependencies {
+    implementation("androidx.core:core:1.16.0")
+}
+
 android {
     namespace = "com.kekekechris.latentimage"
     compileSdk = flutter.compileSdkVersion
