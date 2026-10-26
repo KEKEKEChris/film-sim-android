@@ -44,7 +44,7 @@ class EditorToolbar extends StatelessWidget {
             // The traffic lights sit in the toolbar's leading inset.
             if (titlebar) const SizedBox(width: Metrics.trafficLightInset),
             const SizedBox(width: 7),
-            const FotufilmBrand(),
+            const LatentImageBrand(),
             const SizedBox(width: 8),
             // A browser reads no folders, so it has no library.
             if (libraryFilesAvailable) _LibraryButton(editor: editor),
@@ -446,8 +446,8 @@ void showMoreOptions(BuildContext anchor, EditorCommands commands) {
 }
 
 /// The app's icon and wordmark, compact.
-class FotufilmBrand extends StatelessWidget {
-  const FotufilmBrand({super.key});
+class LatentImageBrand extends StatelessWidget {
+  const LatentImageBrand({super.key});
 
   @override
   Widget build(BuildContext context) {
