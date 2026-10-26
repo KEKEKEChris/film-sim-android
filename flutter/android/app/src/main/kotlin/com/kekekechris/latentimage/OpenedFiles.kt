@@ -3,10 +3,8 @@ package com.kekekechris.latentimage
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.provider.MediaStore
 import android.provider.OpenableColumns
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodChannel
@@ -65,20 +63,11 @@ class OpenedFiles(private val activity: Activity, messenger: BinaryMessenger) {
      * picker must not narrow itself to `image/*` or the videos never appear.
      */
     private fun photoPicker(types: List<String>): Intent {
-        val mimeTypes = types.toTypedArray()
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            Intent(MediaStore.ACTION_PICK_IMAGES).apply {
-                type = "*/*"
-                putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes)
-                putExtra(MediaStore.EXTRA_PICK_IMAGES_MAX, MediaStore.getPickImagesMaxLimit())
-            }
-        } else {
-            Intent(Intent.ACTION_OPEN_DOCUMENT)
-                .addCategory(Intent.CATEGORY_OPENABLE)
-                .setType("*/*")
-                .putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes)
-                .putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
-        }
+        return Intent(Intent.ACTION_OPEN_DOCUMENT)
+            .addCategory(Intent.CATEGORY_OPENABLE)
+            .setType("*/*")
+            .putExtra(Intent.EXTRA_MIME_TYPES, types.toTypedArray())
+            .putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
     }
 
     /** The picker's answer; false when the result is another request's. */
