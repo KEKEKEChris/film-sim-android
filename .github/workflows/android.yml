@@ -319,7 +319,8 @@ jobs:
           # refuses to install a package whose code went backwards. Neither value touches the
           # repository, so a build does not trigger another.
           FOTUFILM_VERSION: 1.14.${{ github.run_number }}
-          FOTUFILM_BUILD: ${{ 2000 + github.run_number }}
+          # FOTUFILM_BUILD is derived in the shell below because GitHub Actions expressions
+          # do not support arithmetic in workflow env values.
           # CXX is deliberately absent. tools/build-android-engine.sh assigns CXX the NDK's
           # aarch64 cross-compiler and then calls tools/generate-halide-aot-android.sh, which
           # builds a host tool with ${CXX:-clang++}. That assignment is not exported, so on a
@@ -334,6 +335,8 @@ jobs:
           test -f "$FOTUFILM_ANDROID_DEPS/arm64/lib/libjpeg.a" || { echo "codecs missing"; exit 1; }
           echo "host clang++: $(command -v clang++ || echo none)"
           clang++ --version | head -1 || true
+          export FOTUFILM_BUILD=$((2000 + ${{ github.run_number }}))
+          echo "Building version $FOTUFILM_VERSION (build $FOTUFILM_BUILD)"
           flutter config --no-analytics
           if [[ "${{ inputs.artifact || 'apk' }}" == "appbundle" ]]; then
             flutter/build-android.sh --appbundle
