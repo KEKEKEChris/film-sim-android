@@ -1,6 +1,8 @@
 // What an export just saved: a dark card at the window's foot with Open (the system's viewer for
 // it), Show in Finder and Dismiss. Export All saved many files, so only Show in Finder is offered
 // for it. In a browser the export is a download, so only Dismiss is.
+import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, kIsWeb;
+import 'package:flutter/services.dart' show MethodChannel, MissingPluginException, PlatformException;
 import 'package:flutter/widgets.dart';
 
 import '../../app/host_window.dart';
@@ -12,6 +14,18 @@ import '../theme/theme.dart';
 class SavedExportNotice extends StatelessWidget {
   const SavedExportNotice({super.key, required this.editor});
   final EditorModel editor;
+  static const _share = MethodChannel('fotufilm/exports');
+
+  Future<void> _shareFile(SavedExport saved) async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
+    try {
+      await _share.invokeMethod('share', {'path': saved.path, 'name': saved.filename});
+    } on PlatformException {
+      // The export itself is complete; a device without a share target can still open it.
+    } on MissingPluginException {
+      // Desktop and older source builds do not provide the Android share channel.
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,12 +50,23 @@ class SavedExportNotice extends StatelessWidget {
 
   Widget _saved(BuildContext context, SavedExport saved) => Center(
         child: _card(Row(mainAxisSize: MainAxisSize.min, children: [
-            Text('Saved ${saved.filename}',
-                style: editorText(context, color: const Color(0xFFFFFFFF))),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 260),
+              child: Text(
+                'Saved ${saved.filename}${saved.directory == null && saved.location == null ? '' : '\n${saved.location ?? saved.directory}'}',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: editorText(context, color: const Color(0xFFFFFFFF)),
+              ),
+            ),
             const SizedBox(width: 16),
             if (HostWindow.showsFiles) ...[
               if (saved.count == null) ...[
                 _NoticeButton('Open', () => HostWindow.openFile(saved.path)),
+                const SizedBox(width: 16),
+              ],
+              if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android && saved.count == null) ...[
+                _NoticeButton('Share', () => _shareFile(saved)),
                 const SizedBox(width: 16),
               ],
               _NoticeButton(HostWindow.revealLabel, () => HostWindow.reveal([saved.path])),
