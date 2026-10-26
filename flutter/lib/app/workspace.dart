@@ -118,7 +118,7 @@ class _WorkspaceState extends State<Workspace> {
   /// The window is named after the photo open in it; with none, after the app.
   String? _title;
   void _nameWindow() {
-    final title = editor.active?.name ?? 'Fotufilm';
+    final title = editor.active?.name ?? 'Latent Image';
     if (title == _title) return;
     _title = title;
     HostWindow.setTitle(title);
