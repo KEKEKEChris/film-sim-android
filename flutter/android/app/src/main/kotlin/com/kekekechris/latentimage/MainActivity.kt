@@ -21,7 +21,7 @@ class MainActivity : FlutterActivity() {
         exports = Exports(this, flutterEngine.dartExecutor.binaryMessenger)
     }
 
-    @Deprecated("FlutterActivity is an Activity, not a ComponentActivity: no result launchers")
+    @Suppress("DEPRECATION")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         if (openedFiles?.onActivityResult(requestCode, resultCode, data) == true) return
         if (exports?.onActivityResult(requestCode, resultCode, data) == true) return
