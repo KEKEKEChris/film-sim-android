@@ -24,6 +24,7 @@ class MainActivity : FlutterActivity() {
     @Deprecated("FlutterActivity is an Activity, not a ComponentActivity: no result launchers")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         if (openedFiles?.onActivityResult(requestCode, resultCode, data) == true) return
+        if (exports?.onActivityResult(requestCode, resultCode, data) == true) return
         @Suppress("DEPRECATION")
         super.onActivityResult(requestCode, resultCode, data)
     }
