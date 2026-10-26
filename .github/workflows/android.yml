@@ -312,6 +312,14 @@ jobs:
           SWIFT_TOOLCHAIN: /opt/swift
           SWIFT_SDK: swift-${{ env.SWIFT_VERSION }}-RELEASE_android
           LD_LIBRARY_PATH: /usr/lib/llvm-21/lib
+          # Every build carries its run number, so two builds never share a version and the
+          # newer one installs over the older. versionName keeps the marketing version from
+          # version.env and adds the run as a patch digit. versionCode is 1000 + the run: the
+          # run alone would be smaller than the 1024 this project shipped with, and Android
+          # refuses to install a package whose code went backwards. Neither value touches the
+          # repository, so a build does not trigger another.
+          FOTUFILM_VERSION: 1.14.${{ github.run_number }}
+          FOTUFILM_BUILD: ${{ 2000 + github.run_number }}
           # CXX is deliberately absent. tools/build-android-engine.sh assigns CXX the NDK's
           # aarch64 cross-compiler and then calls tools/generate-halide-aot-android.sh, which
           # builds a host tool with ${CXX:-clang++}. That assignment is not exported, so on a
