@@ -21,8 +21,11 @@ class DialogCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = Palette.of(context);
+    final room = MediaQuery.sizeOf(context);
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom;
     return Container(
-      width: width,
+      width: width.clamp(0, room.width - 32).toDouble(),
+      constraints: BoxConstraints(maxHeight: room.height - 32 - keyboard),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: palette.dark ? const Color(0xFF222222) : const Color(0xFFFFFFFF),
@@ -38,14 +41,16 @@ class DialogCard extends StatelessWidget {
             Text(title,
                 style: editorText(context, size: TextSizes.dialog, weight: FontWeight.w700)),
             const SizedBox(height: 14),
-            ...children,
-            const SizedBox(height: 18),
-            Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-              for (var i = 0; i < actions.length; i++) ...[
-                if (i > 0) const SizedBox(width: 8),
-                actions[i],
-              ],
-            ]),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.only(bottom: keyboard > 0 ? 12 : 0),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
+              ),
+            ),
+            if (actions.isNotEmpty) ...[
+              const SizedBox(height: 18),
+              Wrap(alignment: WrapAlignment.end, spacing: 8, runSpacing: 8, children: actions),
+            ],
           ],
         ),
       ),
