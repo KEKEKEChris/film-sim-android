@@ -8,7 +8,7 @@ import 'package:flutter/widgets.dart';
 import '../../model/startup.dart';
 import '../kit/kit.dart';
 import '../theme/theme.dart';
-import 'toolbar.dart' show FotufilmBrand;
+import 'toolbar.dart' show LatentImageBrand;
 
 class StartupProgress extends StatefulWidget {
   const StartupProgress({super.key, required this.progress, this.compact = false});
@@ -86,7 +86,7 @@ class _StartupProgressState extends State<StartupProgress> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Align(alignment: Alignment.centerLeft, child: FotufilmBrand()),
+                    const Align(alignment: Alignment.centerLeft, child: LatentImageBrand()),
                     const SizedBox(height: 14),
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 120),
