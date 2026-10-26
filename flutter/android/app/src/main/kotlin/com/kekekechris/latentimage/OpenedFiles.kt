@@ -48,7 +48,8 @@ class OpenedFiles(private val activity: Activity, messenger: BinaryMessenger) {
                 "openPhotos" -> {
                     waiting?.success(emptyList<String>())
                     waiting = result
-                    activity.startActivityForResult(photoPicker(), REQUEST_PHOTOS)
+                    val types = call.argument<List<String>>("types") ?: listOf("image/*", "video/*")
+                    activity.startActivityForResult(photoPicker(types), REQUEST_PHOTOS)
                 }
                 else -> result.notImplemented()
             }
@@ -58,20 +59,27 @@ class OpenedFiles(private val activity: Activity, messenger: BinaryMessenger) {
     /**
      * The system photo picker on Android 13 and later: it shows the gallery itself, with no
      * storage permission and no file tree to walk. Older phones get a document picker narrowed to
-     * images, which their gallery apps answer — the same list in practice, one tap further away.
+     * the same types, which their gallery apps answer — the same list in practice, one tap away.
+     *
+     * `types` is what the caller asked for: the editor asks for images and video together, so the
+     * picker must not narrow itself to `image/*` or the videos never appear.
      */
-    private fun photoPicker(): Intent =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+    private fun photoPicker(types: List<String>): Intent {
+        val mimeTypes = types.toTypedArray()
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             Intent(MediaStore.ACTION_PICK_IMAGES).apply {
-                type = "image/*"
+                type = "*/*"
+                putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes)
                 putExtra(MediaStore.EXTRA_PICK_IMAGES_MAX, MediaStore.getPickImagesMaxLimit())
             }
         } else {
             Intent(Intent.ACTION_OPEN_DOCUMENT)
                 .addCategory(Intent.CATEGORY_OPENABLE)
-                .setType("image/*")
+                .setType("*/*")
+                .putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes)
                 .putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
         }
+    }
 
     /** The picker's answer; false when the result is another request's. */
     fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
