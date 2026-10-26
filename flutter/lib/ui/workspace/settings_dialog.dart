@@ -294,7 +294,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
               child: Text('• $change', style: editorText(context, color: Palette.of(context).muted)),
             ),
           const SizedBox(height: 10),
-        },
+        ],
       ];
 
   // ── Film Model ──────────────────────────────────────────────────────────────────────────
