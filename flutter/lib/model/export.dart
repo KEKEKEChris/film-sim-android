@@ -99,10 +99,13 @@ class ExportJob {
 
 /// What an export just saved, for the notice: one file, or `count` files in `directory`.
 class SavedExport {
-  const SavedExport({required this.filename, required this.path, this.count, this.directory});
+  const SavedExport({required this.filename, required this.path, this.count, this.directory, this.location});
   final String filename, path;
   final int? count;
   final String? directory;
+
+  /// A user-facing destination, which may be a MediaStore folder rather than an internal path.
+  final String? location;
 }
 
 class ExportTool {
@@ -139,6 +142,15 @@ class ExportTool {
 
   /// A folder every export goes to without asking: for scripted checks.
   String? fixedDirectory = environment('FOTUFILM_EXPORT_DIR');
+
+  /// The user's default destination. A one-off picker still wins when no default is configured.
+  String? get defaultDirectory =>
+      fixedDirectory ?? _settings.get<String>('exportDirectory');
+
+  set defaultDirectory(String? value) {
+    _settings.set('exportDirectory', value);
+    editor.notify();
+  }
 
   EngineConnection? get _engine => editor.engine;
   Map<String, dynamic> get _capabilities => _engine?.capabilities ?? const {};
@@ -500,7 +512,8 @@ class ExportTool {
       final answer = await engine.callInBackground('export', request);
       return SavedExport(
           filename: answer.json['filename'] as String? ?? filename,
-          path: answer.json['path'] as String? ?? destination);
+          path: answer.json['path'] as String? ?? destination,
+          location: _settings.get<String>('exportDirectoryUri') ?? defaultDirectory ?? destination);
     }, onStarted: onStarted);
     if (saved != null) await _publish(saved);
     return saved;
@@ -533,7 +546,7 @@ class ExportTool {
       'directory': directory,
     };
     _remember(batch: true);
-    return _queue('${docs.length} photos', [for (final d in docs) d.handle], (engine, job) async {
+    final saved = await _queue('${docs.length} photos', [for (final d in docs) d.handle], (engine, job) async {
       _report(job, 'Preparing export', 0);
       final answer = await engine.callInBackground('exportBatch', request, (progress) {
         final total = progress['total'], name = progress['name'], current = progress['current'];
@@ -565,8 +578,11 @@ class ExportTool {
         path: written.first['path'] as String,
         count: written.length,
         directory: answer.json['directory'] as String? ?? directory,
+        location: answer.json['directory'] as String? ?? directory,
       );
     }, onStarted: onStarted);
+    if (saved != null) await _publish(saved);
+    return saved;
   }
 
   /// The shown movie: every frame of its trim developed with its film, crop and adjustments,
@@ -605,7 +621,8 @@ class ExportTool {
       _settings.set('lastVideoExport', current);
       return _show(SavedExport(
           filename: answer.json['filename'] as String? ?? filename,
-          path: answer.json['path'] as String? ?? path!));
+          path: answer.json['path'] as String? ?? path!,
+          location: defaultDirectory ?? path));
     });
   }
 
@@ -698,13 +715,37 @@ class ExportTool {
     }
   }
 
+  /// Opens Android's persistent directory picker for the Settings page.
+  Future<String?> chooseDefaultDirectory() async {
+    if (defaultTargetPlatform != TargetPlatform.android || kIsWeb) return null;
+    try {
+      final selected = await _androidExports.invokeMethod<String>('chooseDirectory');
+      if (selected != null && selected.isNotEmpty) {
+        _settings.set('exportDirectoryUri', selected);
+        editor.notify();
+      }
+      return selected;
+    } on PlatformException {
+      return null;
+    } on MissingPluginException {
+      return null;
+    }
+  }
+
   /// Files a finished export into the gallery, where a photograph is expected to be. A failure
   /// here leaves the file in the export directory and is not reported: the export itself worked.
+  /// Batch exports are passed as one notice path by the engine; each individual file remains in the
+  /// selected directory because the batch request already names that directory.
   Future<void> _publish(SavedExport saved) async {
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
     try {
-      await _androidExports.invokeMethod<String>(
-          'publish', {'path': saved.path, 'name': saved.filename, 'mime': _mimeOf(saved.filename)});
+      final uri = _settings.get<String>('exportDirectoryUri');
+      await _androidExports.invokeMethod<String>('publish', {
+        'path': saved.path,
+        'name': saved.filename,
+        'mime': _mimeOf(saved.filename),
+        if (uri != null && uri.isNotEmpty) 'directoryUri': uri,
+      });
     } catch (_) {
       // Deliberately quiet — see above.
     }
@@ -717,18 +758,24 @@ class ExportTool {
       'tif' || 'tiff' => 'image/tiff',
       'heic' || 'heif' => 'image/heic',
       'webp' => 'image/webp',
+      'mp4' || 'm4v' => 'video/mp4',
+      'mov' => 'video/quicktime',
       _ => 'image/jpeg',
     };
   }
 
   Future<String?> _chooseFile(String filename, String type) async {
+    // An environment override is a real filesystem path and is used by scripted exports.
     if (fixedDirectory case final dir? when dir.isNotEmpty) return '$dir/$filename';
     // A browser saves to its downloads.
     if (kIsWeb) return filename;
     if (defaultTargetPlatform == TargetPlatform.android) {
+      // The engine accepts filesystem paths, not SAF content URIs. Native copies the finished file
+      // into the selected tree after the engine has written it here.
       final dir = await _androidDirectory();
       return dir == null ? null : '$dir/$filename';
     }
+    if (defaultDirectory case final dir? when dir.isNotEmpty) return '$dir/$filename';
     final ext = filename.contains('.') ? filename.split('.').last : '';
     final location = await getSaveLocation(
       suggestedName: filename,
@@ -742,6 +789,7 @@ class ExportTool {
   Future<String?> _chooseFolder() async {
     if (fixedDirectory case final dir? when dir.isNotEmpty) return dir;
     if (defaultTargetPlatform == TargetPlatform.android) return _androidDirectory();
+    if (defaultDirectory case final dir? when dir.isNotEmpty) return dir;
     return getDirectoryPath(confirmButtonText: 'Export');
   }
 }
