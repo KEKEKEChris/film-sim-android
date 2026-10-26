@@ -28,7 +28,7 @@ class FotufilmApp extends StatelessWidget {
             ? MediaQuery.platformBrightnessOf(context) == Brightness.dark
             : forced == 'dark';
         return MaterialApp(
-          title: 'Fotufilm',
+          title: 'Latent Image',
           debugShowCheckedModeBanner: false,
           theme: ThemeData(fontFamily: editorFont, useMaterial3: true),
           // A phone draws everything larger, the menus and dialogs too (touch_scale.dart).
