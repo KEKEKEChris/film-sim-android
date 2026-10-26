@@ -1,8 +1,8 @@
 #!/bin/bash
-# Builds Fotufilm for Android: the engine library (tools/build-android-engine.sh) and the Flutter
+# Builds Latent Image for Android: the engine library (tools/build-android-engine.sh) and the Flutter
 # editor around it.
-#   flutter/build-android.sh              build build/flutter-host/Fotufilm.apk
-#   flutter/build-android.sh --appbundle  build build/flutter-host/Fotufilm.aab, for Google Play
+#   flutter/build-android.sh              build build/flutter-host/LatentImage.apk
+#   flutter/build-android.sh --appbundle  build build/flutter-host/LatentImage.aab, for Google Play
 # FLUTTER names the flutter tool (default: the one on PATH). An official build
 # (FOTUFILM_SOURCE_BUILD=0) takes the Android app's identity, so it replaces the installed app in
 # place; a source build is an app of its own. FOTUFILM_ANDROID_KEYSTORE, with
@@ -30,20 +30,24 @@ trap 'rm -rf "$stage"' EXIT
 rsync -a --exclude /build --exclude /.dart_tool --exclude /android/.gradle \
   --exclude /android/local.properties --exclude /android/app/.cxx "$tool_dir/" "$stage/flutter/"
 
-version="$(sed -n 's/^MARKETING_VERSION=//p' version.env)"
-build="$(sed -n 's/^CURRENT_PROJECT_VERSION=//p' version.env)"
+# The version the build reports. CI passes both, so every build is distinguishable and can be
+# installed over the one before it: versionName gains a patch number from the run, and
+# versionCode rises with it. A local build still reads version.env.
+version="${FOTUFILM_VERSION:-$(sed -n 's/^MARKETING_VERSION=//p' version.env)}"
+build="${FOTUFILM_BUILD:-$(sed -n 's/^CURRENT_PROJECT_VERSION=//p' version.env)}"
 if [[ "${FOTUFILM_SOURCE_BUILD:-1}" == 0 && "${FOTUFILM_USE_SOURCE_IDENTITY:-0}" != 1 ]]; then
   export FOTUFILM_ANDROID_APPLICATION_ID=com.muastudio.fotufilm
 fi
 (
   cd "$stage/flutter"
   "$flutter_tool" --suppress-analytics build "$artifact" --release --target-platform android-arm64 \
-    --build-name "$version" --build-number "$build"
+    --build-name "$version" --build-number "$build" \
+    --dart-define="APP_VERSION=$version" --dart-define="APP_BUILD=$build"
 )
 
 mkdir -p build/flutter-host
 if [[ "$artifact" == apk ]]; then
-  output=build/flutter-host/Fotufilm.apk
+  output=build/flutter-host/LatentImage.apk
   cp "$stage/flutter/build/app/outputs/flutter-apk/app-release.apk" "$output"
   # No local path in anything the package carries.
   # Each entry under its own number: resource names can differ only in case, which a Mac's
@@ -67,7 +71,7 @@ with zipfile.ZipFile(sys.argv[1]) as package:
     exit 1
   fi
 else
-  output=build/flutter-host/Fotufilm.aab
+  output=build/flutter-host/LatentImage.aab
   cp "$stage/flutter/build/app/outputs/bundle/release/app-release.aab" "$output"
 fi
-echo "Built $output (${FOTUFILM_ANDROID_APPLICATION_ID:-com.muastudio.fotufilm.flutter} $version build $build)"
+echo "Built $output (Latent Image ${FOTUFILM_ANDROID_APPLICATION_ID:-com.muastudio.fotufilm.flutter} $version build $build)"
