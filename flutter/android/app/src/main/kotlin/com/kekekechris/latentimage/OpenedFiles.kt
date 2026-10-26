@@ -35,18 +35,18 @@ class OpenedFiles(private val activity: Activity, messenger: BinaryMessenger) {
                 "open" -> {
                     waiting?.success(emptyList<String>())
                     waiting = result
-                    val types = call.argument<List<String>>("types") ?: listOf("image/*", "video/*")
+                    val types = call.argument<List<String>>("types") ?: listOf("image/" + "*", "video/" + "*")
                     val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
-                        .addCategory(Intent.CATEGORY_OPENABLE)
-                        .setType("*/*")
-                        .putExtra(Intent.EXTRA_MIME_TYPES, types.toTypedArray())
-                        .putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+                    intent.addCategory(Intent.CATEGORY_OPENABLE)
+                    intent.setType("*" + "/" + "*")
+                    intent.putExtra(Intent.EXTRA_MIME_TYPES, types.toTypedArray())
+                    intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
                     activity.startActivityForResult(intent, REQUEST)
                 }
                 "openPhotos" -> {
                     waiting?.success(emptyList<String>())
                     waiting = result
-                    val types = call.argument<List<String>>("types") ?: listOf("image/*", "video/*")
+                    val types = call.argument<List<String>>("types") ?: listOf("image/" + "*", "video/" + "*")
                     activity.startActivityForResult(photoPicker(types), REQUEST_PHOTOS)
                 }
                 else -> result.notImplemented()
@@ -60,12 +60,12 @@ class OpenedFiles(private val activity: Activity, messenger: BinaryMessenger) {
      * the same types, which their gallery apps answer — the same list in practice, one tap away.
      *
      * `types` is what the caller asked for: the editor asks for images and video together, so the
-     * picker must not narrow itself to `image/*` or the videos never appear.
+     * picker must not narrow itself to image files or the videos never appear.
      */
     private fun photoPicker(types: List<String>): Intent {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
         intent.addCategory(Intent.CATEGORY_OPENABLE)
-        intent.setType("*/*")
+        intent.setType("*" + "/" + "*")
         intent.putExtra(Intent.EXTRA_MIME_TYPES, types.toTypedArray())
         intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
         return intent
