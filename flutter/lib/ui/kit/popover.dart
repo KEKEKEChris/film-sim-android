@@ -331,13 +331,17 @@ AnchoredOverlay showModal(BuildContext context, Widget Function(VoidCallback clo
           child: FadeTransition(opacity: shown, child: const ColoredBox(color: Color(0x66000000))),
         ),
       ),
-      Center(
-        child: FadeTransition(
+      AnimatedPadding(
+        duration: const Duration(milliseconds: 120),
+        padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+        child: Center(
+          child: FadeTransition(
           opacity: shown,
           child: still
               ? builder(close)
               : ScaleTransition(
                   scale: Tween(begin: .96, end: 1.0).animate(shown), child: builder(close)),
+          ),
         ),
       ),
     ]),
