@@ -2,8 +2,10 @@
 // model. Everything here is kept on this device; open photographs keep their own edits. Video's
 // settings wait for video in this editor.
 import 'package:file_selector/file_selector.dart';
+import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/widgets.dart';
 
+import '../../model/app_version.dart';
 import '../../model/editor.dart';
 import '../../model/film_packs.dart';
 import '../../model/film_suggestion.dart';
@@ -13,7 +15,7 @@ import '../kit/kit.dart';
 import '../theme/theme.dart';
 import 'app_dialogs.dart';
 
-enum SettingsPane { general, output, filmModel }
+enum SettingsPane { general, output, filmModel, about }
 
 class SettingsDialog extends StatefulWidget {
   const SettingsDialog({super.key, required this.editor, required this.onClose});
@@ -45,6 +47,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
               (SettingsPane.general, 'General'),
               (SettingsPane.output, 'Output'),
               (SettingsPane.filmModel, 'Film Model'),
+              (SettingsPane.about, 'About'),
             ],
             selected: _pane,
             onChanged: (p) => setState(() => _pane = SettingsDialog.pane = p),
@@ -54,6 +57,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
             SettingsPane.general => _general(context),
             SettingsPane.output => _output(),
             SettingsPane.filmModel => _filmModel(),
+            SettingsPane.about => _about(),
           },
         ],
       ),
@@ -164,6 +168,40 @@ class _SettingsDialogState extends State<SettingsDialog> {
   // ── Output ──────────────────────────────────────────────────────────────────────────────
 
   List<Widget> _output() {
+    final current = _settings.get<String>('exportDirectoryUri') ?? _settings.get<String>('exportDirectory');
+    final environmentDefault = widget.editor.exporter.fixedDirectory;
+    return [
+      const PaneNote('Settings are saved on this device. Existing photographs keep their own edits.'),
+      const PaneHeading('Export Location'),
+      InfoRow('Default folder', current == null
+          ? (environmentDefault ?? 'Pictures/Latent Image')
+          : (current.startsWith('content://') ? 'Selected Android folder' : current)),
+      const SizedBox(height: 8),
+      Row(children: [
+        PillButton('Choose Default Folder', onPressed: () async {
+          final path = kIsWeb
+              ? null
+              : defaultTargetPlatform == TargetPlatform.android
+                  ? await widget.editor.exporter.chooseDefaultDirectory()
+                  : await getDirectoryPath(confirmButtonText: 'Use Folder');
+          if (path != null && mounted) {
+            widget.editor.exporter.defaultDirectory = path;
+          }
+        }),
+        const SizedBox(width: 8),
+        PillButton('Use Platform Default', onPressed: current == null ? null : () {
+          _settings.set('exportDirectoryUri', null);
+          widget.editor.exporter.defaultDirectory = null;
+        }),
+      ]),
+      const PaneNote('Exports use this folder without asking each time. On Android the platform '
+          'default is Pictures/Latent Image; choosing a folder is available on systems that provide '
+          'a folder picker.'),
+      ..._outputBody(),
+    ];
+  }
+
+  List<Widget> _outputBody() {
     final exports =
         ((widget.editor.engine?.capabilities['imageExportTypes'] as List?) ?? const []).isNotEmpty;
     if (!exports) {
@@ -237,6 +275,27 @@ class _SettingsDialogState extends State<SettingsDialog> {
       ],
     ];
   }
+
+  // ── About ────────────────────────────────────────────────────────────────────────────────
+
+  List<Widget> _about() => [
+        const PaneHeading('Current Version'),
+        InfoRow('Version', AppVersion.name),
+        InfoRow('Build', AppVersion.build),
+        const PaneNote('The build number increases with every Android package so upgrades install '
+            'over the previous version.'),
+        const PaneHeading('Upgrade History', divider: true),
+        for (final release in AppVersion.history) ...[
+          Text('${release.version} · ${release.title}',
+              style: editorText(context, weight: FontWeight.w700)),
+          for (final change in release.changes)
+            Padding(
+              padding: const EdgeInsets.only(top: 5),
+              child: Text('• $change', style: editorText(context, color: Palette.of(context).muted)),
+            ),
+          const SizedBox(height: 10),
+        },
+      ];
 
   // ── Film Model ──────────────────────────────────────────────────────────────────────────
 
