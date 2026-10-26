@@ -150,8 +150,8 @@ const menuPanels = [
 
 /// The menu bar (main_menu.mm `FotufilmMainMenu`): `plugins` are the engine's {id, name}.
 List<SubmenuNode> mainMenu(List<Json> plugins) => [
-      const SubmenuNode('Fotufilm', [
-        NativeNode('about', 'About Fotufilm'),
+      const SubmenuNode('Latent Image', [
+        NativeNode('about', 'About Latent Image'),
         _separator,
         CommandNode('checkForUpdates', 'Check for Updates…'),
         CommandNode('autoUpdates', 'Check for Updates Automatically'),
@@ -160,11 +160,11 @@ List<SubmenuNode> mainMenu(List<Json> plugins) => [
         _separator,
         NativeNode('services', 'Services'),
         _separator,
-        NativeNode('hide', 'Hide Fotufilm', key: KeyEquivalent('h')),
+        NativeNode('hide', 'Hide Latent Image', key: KeyEquivalent('h')),
         NativeNode('hideOthers', 'Hide Others', key: KeyEquivalent('h', alt: true)),
         NativeNode('showAll', 'Show All'),
         _separator,
-        NativeNode('quit', 'Quit Fotufilm', key: KeyEquivalent('q')),
+        NativeNode('quit', 'Quit Latent Image', key: KeyEquivalent('q')),
       ]),
       const SubmenuNode('File', [
         CommandNode('open', 'Open…', KeyEquivalent('o')),
@@ -257,7 +257,7 @@ List<SubmenuNode> mainMenu(List<Json> plugins) => [
       ], role: 'window'),
       // The same pages the native Mac app opens.
       const SubmenuNode('Help', [
-        NativeNode('help', 'Fotufilm Help', page: 'support', key: KeyEquivalent('?')),
+        NativeNode('help', 'Latent Image Help', page: 'support', key: KeyEquivalent('?')),
         _separator,
         NativeNode('help', 'Third-Party Notices', page: 'third-party'),
         NativeNode('help', 'Terms of Use', page: 'terms'),
@@ -525,7 +525,7 @@ class EditorCommands {
       enabled['revealPlugin:$id'] = installed;
       titles['installPlugin:$id'] = '${installed ? 'Reinstall' : 'Install'} $name Plug-in…';
       if (status != null && !bundled) {
-        toolTips['installPlugin:$id'] = 'This copy of Fotufilm does not contain the $name plug-in.';
+        toolTips['installPlugin:$id'] = 'This copy of Latent Image does not contain the $name plug-in.';
       }
       toolTips['revealPlugin:$id'] = installed
           ? '${status['location'] ?? ''}'
