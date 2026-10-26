@@ -24,7 +24,8 @@ class AppSettings extends ChangeNotifier {
   final SharedPreferencesWithCache? _prefs;
   final Map<String, Object?> _memory = {};
 
-  static const prefix = 'fotufilm.setting.';
+  static const prefix = 'latentimage.setting.';
+  static const legacyPrefix = 'fotufilm.setting.';
 
   static const defaults = <String, Object?>{
     'autoFilm': false,
@@ -46,6 +47,9 @@ class AppSettings extends ChangeNotifier {
     'photoQuality': 'accurate',
     'lastPhotoExport': null,
     'lastVideoExport': null,
+    // Empty means the platform default: Pictures/Latent Image on Android, or a save panel elsewhere.
+    'exportDirectory': null,
+    'exportDirectoryUri': null,
     'updateChecksAutomatically': true,
     'updatePrereleases': false,
     'updateLastCheck': null,
@@ -56,7 +60,7 @@ class AppSettings extends ChangeNotifier {
   /// A value: the stored one, else the default.
   T? get<T>(String key) {
     if (_memory.containsKey(key)) return _memory[key] as T?;
-    final text = _prefs?.getString('$prefix$key');
+    final text = _prefs?.getString('$prefix$key') ?? _prefs?.getString('$legacyPrefix$key');
     Object? value = defaults[key];
     if (text != null) {
       try {
@@ -89,6 +93,7 @@ class AppSettings extends ChangeNotifier {
     for (final key in defaults.keys) {
       _memory.remove(key);
       _prefs?.remove('$prefix$key');
+      _prefs?.remove('$legacyPrefix$key');
     }
     notifyListeners();
   }
