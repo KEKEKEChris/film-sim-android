@@ -215,24 +215,30 @@ class AlertCard extends StatelessWidget {
 /// A heading inside a dialog's pane (`.settings-pane h3`). With `divider`, a hairline above it
 /// separates the group that follows from the one before, which is what makes a long pane read as
 /// groups rather than as one list.
+///
+/// It listens for a language change itself: `const PaneHeading(…)` is the same instance every
+/// build, so Flutter would otherwise skip it and leave the first language's heading in place.
 class PaneHeading extends StatelessWidget {
   const PaneHeading(this.text, {super.key, this.divider = false});
   final String text;
   final bool divider;
 
   @override
-  Widget build(BuildContext context) {
-    final heading = Text(t(text), style: editorText(context, weight: FontWeight.w700));
-    if (!divider) {
-      return Padding(padding: const EdgeInsets.only(top: 12), child: heading);
-    }
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      const SizedBox(height: 16),
-      Container(height: 1, color: Palette.of(context).text.withValues(alpha: .08)),
-      const SizedBox(height: 12),
-      heading,
-    ]);
-  }
+  Widget build(BuildContext context) => ListenableBuilder(
+        listenable: L10n.instance.revision,
+        builder: (context, _) {
+          final heading = Text(t(text), style: editorText(context, weight: FontWeight.w700));
+          if (!divider) {
+            return Padding(padding: const EdgeInsets.only(top: 12), child: heading);
+          }
+          return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            const SizedBox(height: 16),
+            Container(height: 1, color: Palette.of(context).text.withValues(alpha: .08)),
+            const SizedBox(height: 12),
+            heading,
+          ]);
+        },
+      );
 }
 
 /// A pane's muted note (`.medium-detail`).

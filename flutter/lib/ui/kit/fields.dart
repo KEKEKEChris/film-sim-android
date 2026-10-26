@@ -238,11 +238,21 @@ class InfoRow extends StatelessWidget {
 }
 
 /// A muted note under controls (`.medium-detail`).
+///
+/// It listens for a language change itself. A `const Note(…)` is the same instance on every
+/// build, so Flutter skips it — and a note written as a `const PaneNote` would keep the
+/// language it was first drawn in. Listening here keeps the call sites const.
 class Note extends StatelessWidget {
   const Note(this.text, {super.key});
   final String text;
 
   @override
-  Widget build(BuildContext context) => Text(t(text),
-      style: editorText(context, size: TextSizes.label, color: Palette.of(context).muted, height: 1.45));
+  Widget build(BuildContext context) => ListenableBuilder(
+        listenable: L10n.instance.revision,
+        builder: (context, _) => Text(t(text),
+            style: editorText(context,
+                size: TextSizes.label,
+                color: Palette.of(context).muted,
+                height: 1.45)),
+      );
 }
