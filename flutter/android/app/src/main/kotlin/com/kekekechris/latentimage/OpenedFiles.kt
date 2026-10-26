@@ -62,11 +62,13 @@ class OpenedFiles(private val activity: Activity, messenger: BinaryMessenger) {
      * `types` is what the caller asked for: the editor asks for images and video together, so the
      * picker must not narrow itself to `image/*` or the videos never appear.
      */
-    private fun photoPicker(types: List<String>): Intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-        addCategory(Intent.CATEGORY_OPENABLE)
-        type = "*/*"
-        putExtra(Intent.EXTRA_MIME_TYPES, types.toTypedArray())
-        putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+    private fun photoPicker(types: List<String>): Intent {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
+        intent.addCategory(Intent.CATEGORY_OPENABLE)
+        intent.setType("*/*")
+        intent.putExtra(Intent.EXTRA_MIME_TYPES, types.toTypedArray())
+        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+        return intent
     }
 
     /** The picker's answer; false when the result is another request's. */
