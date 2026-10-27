@@ -31,7 +31,7 @@ class FotufilmApp extends StatelessWidget {
     // is drawn, so nothing else has to know which language or appearance is in use.
     return ListenableBuilder(
       listenable: Listenable.merge([L10n.instance.revision, editor.settings]),
-      builder: (context, _, __) => MaterialApp(
+      builder: (context, _) => MaterialApp(
         title: 'Latent Image',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(fontFamily: editorFont, useMaterial3: true),
