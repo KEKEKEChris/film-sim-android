@@ -164,10 +164,8 @@ class _PillButtonState extends State<PillButton> with PointerTint {
     final palette = Palette.of(context);
     final enabled = widget.onPressed != null;
     final (Color bg, Color fg) = switch (widget.variant) {
-      ButtonVariant.accent => (
-          palette.dark ? const Color(0xFF5681FF) : const Color(0xFF3B63FB),
-          const Color(0xFFFFFFFF)
-        ),
+      // The appearance's own accent, so a warm darkroom gets an amber button and Pure a blue one.
+      ButtonVariant.accent => (palette.accent, palette.onSelected),
       ButtonVariant.negative => (
           palette.dark ? const Color(0xFFFC432E) : const Color(0xFFD73220),
           const Color(0xFFFFFFFF)

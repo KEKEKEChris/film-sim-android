@@ -88,30 +88,27 @@ class OverlayFocusScope extends FocusScopeNode {
 AnchoredOverlay showOverlay(BuildContext context,
     Widget Function(BuildContext context, Animation<double> shown, VoidCallback close) builder) {
   final handle = AnchoredOverlay._();
-  final palette = Palette.of(context);
   final opener = FocusManager.instance.primaryFocus;
   final scope = OverlayFocusScope();
   handle._entry = OverlayEntry(
-    builder: (context) => PaletteScope(
-      palette: palette,
-      child: FocusScope(
-        node: scope,
-        onKeyEvent: (_, event) {
-          if (event is! KeyDownEvent || event.logicalKey != LogicalKeyboardKey.escape) {
-            return KeyEventResult.ignored;
-          }
-          // A modal that may not be dismissed keeps the key.
-          if (!handle._modal || !dismissTopModal()) handle.close();
-          return KeyEventResult.handled;
+    // The overlay sits under the app's PaletteScope, so a change of appearance reaches it too.
+    builder: (context) => FocusScope(
+      node: scope,
+      onKeyEvent: (_, event) {
+        if (event is! KeyDownEvent || event.logicalKey != LogicalKeyboardKey.escape) {
+          return KeyEventResult.ignored;
+        }
+        // A modal that may not be dismissed keeps the key.
+        if (!handle._modal || !dismissTopModal()) handle.close();
+        return KeyEventResult.handled;
+      },
+      child: _Presence(
+        leaving: handle._leaving,
+        onGone: () {
+          if (handle._entry.mounted) handle._entry.remove();
+          scope.dispose();
         },
-        child: _Presence(
-          leaving: handle._leaving,
-          onGone: () {
-            if (handle._entry.mounted) handle._entry.remove();
-            scope.dispose();
-          },
-          builder: (context, shown) => builder(context, shown, handle.close),
-        ),
+        builder: (context, shown) => builder(context, shown, handle.close),
       ),
     ),
   );

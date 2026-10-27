@@ -35,12 +35,13 @@ class FotufilmApp extends StatelessWidget {
         title: 'Latent Image',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(fontFamily: editorFont, useMaterial3: true),
-        // A phone draws everything larger, the menus and dialogs too (touch_scale.dart).
-        builder: (context, child) => TouchScale(child: child!),
-        home: PaletteScope(
-          palette: _palette(context),
-          child: Workspace(editor: editor),
+        // The palette wraps the navigator rather than the workspace alone, so dialogs, menus and
+        // popovers — which live in the overlay above the workspace — change appearance with it.
+        builder: (context, child) => TouchScale(
+          // A phone draws everything larger, the menus and dialogs too (touch_scale.dart).
+          child: PaletteScope(palette: _palette(context), child: child!),
         ),
+        home: Workspace(editor: editor),
       ),
     );
   }
