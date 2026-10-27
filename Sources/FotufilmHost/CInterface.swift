@@ -39,6 +39,16 @@ public func cdecl_fotufilm_api_version() -> Int32 { FOTUFILM_API_VERSION }
 @_cdecl("fotufilm_free")
 public func cdecl_fotufilm_free(_ string: UnsafeMutablePointer<CChar>?) { free(string) }
 
+@_cdecl("fotufilm_set_resources")
+public func cdecl_fotufilm_set_resources(_ directory: UnsafePointer<CChar>?) {
+    guard let directory else { return }
+    let path = String(cString: directory)
+    setenv("FOTUFILM_RESOURCES", path, 1)
+    setenv("FOTUFILM_STOCKS", URL(fileURLWithPath: path, isDirectory: true)
+        .appendingPathComponent("Stocks", isDirectory: true).path, 1)
+    FilmStockPack.configureInstalledResources(at: URL(fileURLWithPath: path, isDirectory: true))
+}
+
 @_cdecl("fotufilm_engine_create")
 public func cdecl_fotufilm_engine_create(
     _ error: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
