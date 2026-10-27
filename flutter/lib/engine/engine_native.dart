@@ -12,6 +12,7 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
+import 'package:flutter/services.dart';
 
 import 'engine.dart';
 import 'fotufilm_ffi.dart';
@@ -48,7 +49,11 @@ class NativeEngine implements EngineConnection {
 
   static Future<NativeEngine> start() async {
     final replies = ReceivePort();
-    await Isolate.spawn(_serve, replies.sendPort, debugName: 'fotufilm-engine');
+    String? resourcePath;
+    if (Platform.isAndroid) {
+      resourcePath = await const MethodChannel('fotufilm/resources').invokeMethod<String>('path');
+    }
+    await Isolate.spawn(_serve, (replies.sendPort, resourcePath), debugName: 'fotufilm-engine');
     final events = StreamIterator(replies);
     await events.moveNext();
     final hello = events.current;
@@ -176,11 +181,15 @@ void _serveLane((SendPort, int) start) {
   _answerCalls(FotufilmLibrary.open(), Pointer<Void>.fromAddress(address), commands, replies);
 }
 
-void _serve(SendPort replies) {
+void _serve((SendPort, String?) start) {
+  final (replies, resourcePath) = start;
   final FotufilmLibrary library;
   final Pointer<Void> engine;
   try {
     library = FotufilmLibrary.open();
+    if (resourcePath != null && resourcePath.isNotEmpty) {
+      library.setResources(resourcePath);
+    }
     engine = library.createEngine();
   } catch (error) {
     replies.send('$error');
