@@ -11,13 +11,18 @@ import '../../model/negative_document.dart';
 import '../kit/kit.dart';
 import '../theme/theme.dart';
 import 'editing_dialogs.dart';
+import 'import_menu.dart';
 import 'panel_layout.dart';
 import 'picture.dart';
 import 'preset_list.dart';
 
 class FilmLibrary extends StatefulWidget {
-  const FilmLibrary({super.key, required this.editor});
+  const FilmLibrary(
+      {super.key, required this.editor, required this.onGallery, required this.onFiles});
   final EditorModel editor;
+
+  /// The phone's drawer carries Add media at its foot, the three-part toolbar having no room.
+  final VoidCallback onGallery, onFiles;
 
   @override
   State<FilmLibrary> createState() => _FilmLibraryState();
@@ -121,6 +126,9 @@ class _FilmLibraryState extends State<FilmLibrary> {
             ]),
           ),
         Expanded(child: editor.presetsTab ? PresetList(editor: editor, open: open) : _list(open)),
+        // A phone's drawer is where Add media lives: the toolbar keeps three things only.
+        if (editor.layout.compact && open)
+          _AddMediaBar(editor: editor, onGallery: widget.onGallery, onFiles: widget.onFiles),
       ]),
     );
   }
@@ -209,6 +217,47 @@ class _FilmLibraryState extends State<FilmLibrary> {
   }
 }
 
+/// The drawer's foot: Add media, at the width of the drawer, opening the same menu the desktop
+/// toolbar's icon does.
+class _AddMediaBar extends StatelessWidget {
+  const _AddMediaBar({required this.editor, required this.onGallery, required this.onFiles});
+  final EditorModel editor;
+  final VoidCallback onGallery, onFiles;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = Palette.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 2, 10, 10),
+      child: Builder(
+        builder: (anchor) => Semantics(
+          button: true,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: editor.exporting
+                ? null
+                : () => showImportMenu(anchor, editor, onGallery: onGallery, onFiles: onFiles),
+            child: Container(
+              height: Metrics.compactPill + 8,
+              decoration: BoxDecoration(
+                color: palette.gray100,
+                borderRadius: BorderRadius.circular((Metrics.compactPill + 8) / 2),
+              ),
+              child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                AppIcon('plus', size: Metrics.icon, color: palette.text),
+                const SizedBox(width: 6),
+                Text(t('Add media'),
+                    style: editorText(context,
+                        size: TextSizes.section, weight: FontWeight.w500, color: palette.text)),
+              ]),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// One film in the phone's strip: its picture, ringed while chosen, over its name.
 class StripTile extends StatelessWidget {
   const StripTile({
@@ -217,12 +266,19 @@ class StripTile extends StatelessWidget {
     required this.thumbnail,
     required this.selected,
     required this.onPressed,
+    this.thumb,
+    this.nameLines = 2,
   });
 
   final String name;
   final ui.Image? thumbnail;
   final bool selected;
   final VoidCallback? onPressed;
+
+  /// The picture's height, and how many lines its name may take: the drawer's strip has the room
+  /// for a taller picture and two lines, the one floating over the canvas has neither.
+  final double? thumb;
+  final int nameLines;
 
   @override
   Widget build(BuildContext context) {
@@ -235,9 +291,9 @@ class StripTile extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onPressed,
-        child: Column(children: [
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
           Container(
-            height: Metrics.filmStripThumb,
+            height: thumb ?? Metrics.filmStripThumb,
             decoration: BoxDecoration(
               color: palette.dark ? const Color(0x08FFFFFF) : const Color(0x07000000),
               borderRadius: BorderRadius.circular(6),
@@ -256,7 +312,7 @@ class StripTile extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(t(name),
-              maxLines: 2,
+              maxLines: nameLines,
               textAlign: TextAlign.center,
               overflow: TextOverflow.ellipsis,
               style: editorText(context,

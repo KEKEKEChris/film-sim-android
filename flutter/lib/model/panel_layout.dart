@@ -139,24 +139,24 @@ class PanelLayout extends ChangeNotifier {
   void keepWidths() =>
       editor.settings.set(key, {'film': preferred.film, 'inspector': preferred.inspector});
 
-  /// A panel chosen from the rail: in the compact layout the Film panel is the film list's dock,
-  /// and the other panels the inspector's.
+  /// A panel chosen from the rail: in the compact layout every panel is the inspector's, since
+  /// the films float over the picture and are chosen there rather than in a drawer.
   void choosePanel(Panel panel) {
     editor.endEdit();
     if (!compact) return editor.setPanel(panel);
-    final films = panel == Panel.film;
-    // The Film button is the list of films, never the presets that share its dock.
-    if (films) editor.setPresetsTab(false);
+    editor.setPresetsTab(false);
     editor.setPanel(panel);
-    if (films && editor.inspectorOpen) editor.toggleInspector();
-    if (editor.filmOpen != films) editor.toggleFilm();
+    if (!editor.inspectorOpen) {
+      toggleInspector();
+    } else if (editor.filmOpen) {
+      editor.toggleFilm();
+    }
   }
 
-  /// The compact rail's dock showing: the film list or the Film settings for the Film button, the
-  /// inspector for the others.
+  /// The compact rail's panel showing in the inspector's drawer. The presets have a button of
+  /// their own (`presetsShowing`).
   bool railShowing(Panel panel) =>
-      (panel == Panel.film && editor.filmOpen && !editor.presetsTab) ||
-      (!editor.filmOpen && editor.inspectorOpen && editor.panel == panel);
+      !editor.filmOpen && editor.inspectorOpen && editor.panel == panel;
 
   /// Whether the rail's Presets button's dock is showing: the film library, on its presets tab.
   bool get presetsShowing => editor.filmOpen && editor.presetsTab;

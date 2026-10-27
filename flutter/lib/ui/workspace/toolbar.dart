@@ -1,8 +1,10 @@
 // The editor's toolbar, compact: 40 px in the panels' colour. The brand, the library and Add media
 // on the left, zoom and the canvas tools in the middle, the histogram, history, export, More and
 // the inspector on the right. On macOS it is the titlebar: its empty space drags the window.
+import 'dart:math' as math;
+
+import 'package:flutter/services.dart' show SystemNavigator;
 import 'package:flutter/widgets.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../app/commands.dart';
 import '../../app/editor_shortcuts.dart' show shortcutLabel;
@@ -11,6 +13,7 @@ import '../../app/touch_scale.dart' show mobilePlatform;
 import '../../model/app_dialogs.dart';
 import '../../model/editor.dart';
 import '../../model/library_files.dart' show libraryFilesAvailable;
+import '../../model/panel_layout.dart' show PanelSide;
 import '../../model/presets.dart' show pasteTitle;
 import '../kit/kit.dart';
 import '../theme/theme.dart';
@@ -91,9 +94,9 @@ class EditorToolbar extends StatelessWidget {
       child: child);
 }
 
-/// The compact layout's toolbar, one row: the library (where folders can be read) and Add media,
-/// then history, export and More. Zoom gives way to pinching, the panels to the rail below, and the histogram and Reset go
-/// into More.
+/// The compact layout's toolbar, three things and no more: back, the film the photograph is being
+/// developed in over its name, and Export. Adding media lives at the foot of the film drawer, the
+/// panels in the rail below, and the histogram, Reset and undo in More.
 extension on EditorToolbar {
   Widget _compact(Color? colour, bool titlebar) => Container(
         height: Metrics.compactToolbarRow,
@@ -101,15 +104,118 @@ extension on EditorToolbar {
         padding: const EdgeInsets.symmetric(horizontal: 4),
         child: Row(children: [
           if (titlebar) const SizedBox(width: Metrics.trafficLightInset),
-          if (libraryFilesAvailable) _LibraryButton(editor: editor, size: Metrics.compactTouch),
-          ImportMenu(
-              editor: editor,
-              onGallery: commands.actions.openGallery,
-              onFiles: commands.actions.openFiles,
-              size: Metrics.compactTouch),
-          const Spacer(),
-          _whileEditing(_EditGroup(commands: commands, compact: true)),
+          _BackButton(editor: editor),
+          const SizedBox(width: 2),
+          Expanded(child: _TitleBlock(editor: editor)),
+          _whileEditing(Row(mainAxisSize: MainAxisSize.min, children: [
+            if (editor.exporter.busy) ...[
+              ExportProgressButton(editor: editor, size: Metrics.compactTouch),
+              const SizedBox(width: 2),
+            ],
+            _ExportPill(commands: commands),
+            _MoreButton(commands: commands),
+          ])),
         ]),
+      );
+}
+
+/// The film the photograph is being developed in, by name; Normal with no film.
+String _stockName(EditorModel editor) {
+  final id = editor.edit['stock'] as String?;
+  for (final stock in editor.stocks) {
+    if (stock['id'] == id) return stock['name'] as String? ?? 'Normal';
+  }
+  return 'Normal';
+}
+
+/// Back out of whatever is open: a drawer, the photo library, a crop — and with nothing left to
+/// close, out of the app, as a phone's back expects.
+class _BackButton extends StatelessWidget {
+  const _BackButton({required this.editor});
+  final EditorModel editor;
+
+  @override
+  Widget build(BuildContext context) => QuietButton(
+        icon: 'chevronLeft',
+        tooltip: 'Back',
+        size: Metrics.compactTouch,
+        onPressed: () {
+          final layout = editor.layout;
+          if (layout.compact && (editor.filmOpen || editor.inspectorOpen)) {
+            layout.dismiss(editor.filmOpen ? PanelSide.film : PanelSide.inspector);
+          } else if (editor.library.open) {
+            editor.library.toggle();
+          } else {
+            SystemNavigator.pop();
+          }
+        },
+      );
+}
+
+/// The photograph's film over its file name, or the app's name with nothing open.
+class _TitleBlock extends StatelessWidget {
+  const _TitleBlock({required this.editor});
+  final EditorModel editor;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = Palette.of(context);
+    final doc = editor.active;
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(doc == null ? 'Latent Image' : _stockName(editor),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: editorText(context,
+                    size: TextSizes.heading, weight: FontWeight.w500, color: palette.text)
+                .copyWith(letterSpacing: .1)),
+        if (doc != null) ...[
+          const SizedBox(height: 1),
+          Text(doc.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: editorText(context, size: TextSizes.label, color: palette.text3)),
+        ],
+      ],
+    );
+  }
+}
+
+/// Export, as the one filled control on the phone.
+class _ExportPill extends StatelessWidget {
+  const _ExportPill({required this.commands});
+  final EditorCommands commands;
+
+  @override
+  Widget build(BuildContext context) {
+    final editor = commands.editor;
+    return PillButton('Export',
+        variant: ButtonVariant.accent,
+        height: Metrics.compactPill,
+        padding: 15,
+        onPressed: editor.active != null && editor.stocks.isNotEmpty && !editor.exporting
+            ? commands.actions.export
+            : null);
+  }
+}
+
+/// Everything the three-part bar has no room for.
+class _MoreButton extends StatelessWidget {
+  const _MoreButton({required this.commands});
+  final EditorCommands commands;
+
+  @override
+  Widget build(BuildContext context) => Builder(
+        key: moreOptionsKey,
+        builder: (anchor) => QuietButton(
+          icon: 'more',
+          tooltip: 'More options',
+          opensMenu: true,
+          size: Metrics.compactTouch,
+          onPressed: () => showMoreOptions(anchor, commands),
+        ),
       );
 }
 
@@ -445,27 +551,77 @@ void showMoreOptions(BuildContext anchor, EditorCommands commands) {
   ]);
 }
 
-/// The app's icon and wordmark, compact.
+/// The app's mark and name, compact. The mark is drawn rather than shipped as an asset so it takes
+/// the appearance's accent and stays sharp at any size.
 class LatentImageBrand extends StatelessWidget {
-  const LatentImageBrand({super.key});
+  const LatentImageBrand({super.key, this.size = 22, this.showName = true});
+  final double size;
+  final bool showName;
 
   @override
   Widget build(BuildContext context) {
     final palette = Palette.of(context);
     return Row(mainAxisSize: MainAxisSize.min, children: [
-      ClipRRect(
-        borderRadius: BorderRadius.circular(6),
-        child: Image.asset('assets/generated/app-icon.png',
-            width: 24, height: 24, filterQuality: FilterQuality.medium),
-      ),
-      const SizedBox(width: 8),
-      SvgPicture.asset(
-        'assets/generated/fotufilm-wordmark.svg',
-        width: 80,
-        height: 16,
-        colorFilter: ColorFilter.mode(
-            palette.dark ? const Color(0xFFFFFFFF) : const Color(0xD9000000), BlendMode.srcIn),
-      ),
+      BrandMark(size: size),
+      if (showName) ...[
+        const SizedBox(width: 7),
+        Text('Latent Image',
+            style: editorText(context,
+                    size: TextSizes.heading, weight: FontWeight.w500, color: palette.text)
+                .copyWith(letterSpacing: .1)),
+      ],
     ]);
   }
+}
+
+/// The mark alone: a rounded square, a ring inside it, and the ring's left half filled — the latent
+/// image, half developed, half still in the emulsion.
+class BrandMark extends StatelessWidget {
+  const BrandMark({super.key, this.size = 22, this.color});
+  final double size;
+
+  /// The accent, unless given one.
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) => SizedBox.square(
+        dimension: size,
+        child: CustomPaint(painter: _BrandMarkPainter(color ?? Palette.of(context).accent)),
+      );
+}
+
+class _BrandMarkPainter extends CustomPainter {
+  const _BrandMarkPainter(this.colour);
+  final Color colour;
+
+  // Drawn in the 24-unit box the mark was designed in.
+  static const _unit = 24.0;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.shortestSide / _unit;
+    final paint = Paint()
+      ..color = colour
+      ..isAntiAlias = true;
+    final stroke = Paint()
+      ..color = colour
+      ..isAntiAlias = true
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5 * s;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(1.4 * s, 1.4 * s, 21.2 * s, 21.2 * s),
+        Radius.circular(6.6 * s),
+      ),
+      stroke,
+    );
+    final centre = Offset(12 * s, 12 * s);
+    final ring = Rect.fromCircle(center: centre, radius: 5.4 * s);
+    canvas.drawCircle(centre, 5.4 * s, stroke);
+    // From the bottom, a half turn through the left side to the top.
+    canvas.drawArc(ring, math.pi / 2, math.pi, true, paint);
+  }
+
+  @override
+  bool shouldRepaint(_BrandMarkPainter old) => old.colour != colour;
 }

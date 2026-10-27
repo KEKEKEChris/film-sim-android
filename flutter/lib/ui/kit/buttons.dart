@@ -148,11 +148,23 @@ enum ButtonVariant { secondary, accent, negative }
 /// A filled pill: secondary grey, the accent blue, or the negative red.
 class PillButton extends StatefulWidget {
   const PillButton(this.label,
-      {super.key, this.onPressed, this.variant = ButtonVariant.secondary, this.expand = false});
+      {super.key,
+      this.onPressed,
+      this.variant = ButtonVariant.secondary,
+      this.expand = false,
+      this.height,
+      this.padding = 12,
+      this.textSize});
   final String label;
   final VoidCallback? onPressed;
   final ButtonVariant variant;
   final bool expand;
+
+  /// The pill's height, and its inset either side: a phone's toolbar asks for a taller, roomier
+  /// pill than a dialog's.
+  final double? height;
+  final double padding;
+  final double? textSize;
 
   @override
   State<PillButton> createState() => _PillButtonState();
@@ -175,22 +187,25 @@ class _PillButtonState extends State<PillButton> with PointerTint {
     return tinted(
       onTap: widget.onPressed,
       label: t(widget.label),
-      radius: Metrics.control / 2,
+      radius: (widget.height ?? Metrics.control) / 2,
       child: Opacity(
         opacity: enabled ? 1 : .45,
         child: Container(
-          height: Metrics.control,
+          height: widget.height ?? Metrics.control,
           width: widget.expand ? double.infinity : null,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          padding: EdgeInsets.symmetric(horizontal: widget.padding),
           decoration: BoxDecoration(
             color: hovered && enabled ? Color.lerp(bg, palette.text, .06) : bg,
-            borderRadius: BorderRadius.circular(Metrics.control / 2),
+            borderRadius: BorderRadius.circular((widget.height ?? Metrics.control) / 2),
           ),
           // Its own width unless it expands, even under a stretching column.
           child: Center(
             widthFactor: widget.expand ? null : 1,
             child: Text(t(widget.label),
-                style: editorText(context, weight: FontWeight.w700, color: fg)),
+                style: editorText(context,
+                    size: widget.textSize ?? TextSizes.body,
+                    weight: FontWeight.w700,
+                    color: fg)),
           ),
         ),
       ),

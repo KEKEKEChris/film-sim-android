@@ -26,8 +26,11 @@ abstract final class Metrics {
 
   // ── Compact layout ─────────────────────────────────────────────────────────────────────────
   // A phone draws these 1.25 times larger (app/touch_scale.dart): 50 px rows, 45 px buttons.
-  static const compactToolbarRow = 40.0;
+  static const compactToolbarRow = 48.0;
   static const compactTouch = 36.0;
+
+  /// The toolbar's Export pill: 38 px on a phone once the touch scale has drawn it.
+  static const compactPill = 30.0;
   static const compactRail = 48.0;
   static const compactRailButton = 42.0;
 

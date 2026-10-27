@@ -20,6 +20,7 @@ import '../ui/workspace/app_dialogs.dart';
 import '../ui/workspace/editing_dialogs.dart';
 import '../ui/workspace/export_dialog.dart';
 import '../ui/workspace/film_library.dart';
+import '../ui/workspace/film_strip_overlay.dart';
 import '../ui/workspace/library/library_handoff.dart';
 import '../ui/workspace/library/photo_library_view.dart';
 import '../ui/workspace/panel_layout.dart';
@@ -261,7 +262,9 @@ class _WorkspaceState extends State<Workspace> {
     const hit = Metrics.resizerHit;
     return Stack(children: [
       Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        SizedBox(width: film, child: FilmLibrary(editor: editor)),
+        SizedBox(
+            width: film,
+            child: FilmLibrary(editor: editor, onGallery: _open, onFiles: _openFiles)),
         Expanded(child: EditorViewer(editor: editor, onOpen: _open, dropping: _dropping)),
         SizedBox(
           width: inspector,
@@ -304,11 +307,8 @@ class _WorkspaceState extends State<Workspace> {
   static bool _beside(double width, double height) =>
       width <= compactMaxWidth && width > height * sideAspect;
 
-  /// How far the strip of films' grabber has been pulled down.
-  double _stripPull = 0;
-
-  /// The phone's stacked layout: the picture, the open dock (the film list or the inspector),
-  /// and the rail of panels, which stays under them.
+  /// The phone's stacked layout: the picture filling everything above the rail, the films floating
+  /// over its foot, and a drawer over the picture for the presets or the inspector.
   Widget _compactPanels(BuildContext context, BoxConstraints constraints) {
     final layout = editor.layout;
     final height = MediaQuery.sizeOf(context).height;
@@ -316,7 +316,7 @@ class _WorkspaceState extends State<Workspace> {
     final fallback = short
         ? height * .42
         : (height * .44).clamp(Metrics.compactDockMin, Metrics.compactDockMax).toDouble();
-    // The picture keeps its room above the tallest dock.
+    // The picture keeps its room above the tallest drawer.
     final keyboard = MediaQuery.viewInsetsOf(context).bottom;
     final bottom = keyboard > 0 ? 0.0 : MediaQuery.paddingOf(context).bottom;
     final tallest = constraints.maxHeight -
@@ -326,8 +326,6 @@ class _WorkspaceState extends State<Workspace> {
     final dock =
         math.min(layout.dockHeight ?? fallback, math.max(tallest, Metrics.compactDockMin * .5));
     final open = editor.filmOpen || editor.inspectorOpen;
-    // The strip of films keeps its own height; its grabber only closes it.
-    final strip = editor.filmOpen && !editor.presetsTab;
     final palette = Palette.of(context);
     final rail = Container(
       height: Metrics.compactRail + bottom,
@@ -335,8 +333,26 @@ class _WorkspaceState extends State<Workspace> {
       padding: EdgeInsets.only(bottom: bottom),
       child: CompactRail(editor: editor),
     );
-    final docked = editor.filmOpen ? FilmLibrary(editor: editor) : EditorInspector(editor: editor);
-    // A phone held sideways: the dock beside the picture, the full height above the rail.
+    // The presets drawer shares the film library; the rest are the inspector's.
+    final docked = editor.filmOpen
+        ? FilmLibrary(editor: editor, onGallery: _open, onFiles: _openFiles)
+        : EditorInspector(editor: editor);
+    // The films take no room from the picture: they are drawn over it, and give way as a drawer
+    // opens so the whole screen can be the photograph.
+    final films = Positioned(
+      left: 8,
+      right: 8,
+      bottom: 8,
+      child: IgnorePointer(
+        ignoring: open,
+        child: AnimatedOpacity(
+          opacity: open ? 0 : 1,
+          duration: const Duration(milliseconds: 240),
+          child: FilmStripOverlay(editor: editor),
+        ),
+      ),
+    );
+    // A phone held sideways: the drawer beside the picture, the full height above the rail.
     if (layout.side) {
       final width = (constraints.maxWidth * .45)
           .clamp(Metrics.compactSideMin, Metrics.compactSideMax)
@@ -346,7 +362,13 @@ class _WorkspaceState extends State<Workspace> {
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Expanded(
             child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              Expanded(child: EditorViewer(editor: editor, onOpen: _open, dropping: _dropping)),
+              Expanded(
+                child: Stack(children: [
+                  Positioned.fill(
+                      child: EditorViewer(editor: editor, onOpen: _open, dropping: _dropping)),
+                  films,
+                ]),
+              ),
               if (open)
                 SizedBox(
                   width: width,
@@ -361,21 +383,19 @@ class _WorkspaceState extends State<Workspace> {
         ]),
       );
     }
-    final dockHeight = strip ? Metrics.compactFilmStrip : dock;
-    final maxDockAllowed = math.max(
-        140.0,
-        constraints.maxHeight -
-            keyboard -
-            (keyboard > 0 ? 0 : Metrics.compactRail + bottom) -
-            (keyboard > 0 ? 40 : Metrics.compactPictureMin));
-    final finalDockHeight = math.min(dockHeight, maxDockAllowed);
     return Padding(
       padding: EdgeInsets.only(bottom: keyboard),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Expanded(child: EditorViewer(editor: editor, onOpen: _open, dropping: _dropping)),
+        Expanded(
+          child: Stack(children: [
+            Positioned.fill(
+                child: EditorViewer(editor: editor, onOpen: _open, dropping: _dropping)),
+            films,
+          ]),
+        ),
         if (open)
           SizedBox(
-            height: finalDockHeight,
+            height: dock,
             child: DecoratedBox(
               decoration: const BoxDecoration(boxShadow: [
                 BoxShadow(color: Color(0x09000000), blurRadius: 18, offset: Offset(0, -4)),
@@ -386,14 +406,8 @@ class _WorkspaceState extends State<Workspace> {
                   color: palette.panel,
                   child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                     _DockGrabber(
-                      onDrag: (dy) => strip
-                          ? _stripPull += dy
-                          : layout.dragDock(dock - dy, tallest),
-                      onEnd: (velocity) {
-                        if (!strip) return layout.releaseDock(velocity, before: dock);
-                        if (_stripPull > 40 || velocity > 700) layout.dismiss(PanelSide.film);
-                        _stripPull = 0;
-                      },
+                      onDrag: (dy) => layout.dragDock(dock - dy, tallest),
+                      onEnd: (velocity) => layout.releaseDock(velocity, before: dock),
                       onTap: () => layout.dismiss(
                           editor.filmOpen ? PanelSide.film : PanelSide.inspector),
                     ),
