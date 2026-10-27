@@ -44,7 +44,7 @@ class _PluginsDialogState extends State<PluginsDialog> {
     ];
     final verb = offer.updating ? 'Update' : 'Install';
     return AppDialogCard(
-      title: '$verb the Fotufilm plug-ins for ${joinedNames(names)}?',
+      title: '$verb the Latent Image plug-ins for ${joinedNames(names)}?',
       actions: [
         PillButton('Not Now', onPressed: () {
           model.decline();
@@ -54,9 +54,9 @@ class _PluginsDialogState extends State<PluginsDialog> {
       ],
       children: [
         PaneNote(offer.updating
-            ? 'The installed plug-ins are from another version of Fotufilm. Updating them keeps '
+            ? 'The installed plug-ins are from another version of Latent Image. Updating them keeps '
                 'them developing the same film this app does.'
-            : 'Fotufilm can develop film inside ${joinedNames(names)} using the same engine this '
+            : 'Latent Image can develop film inside ${joinedNames(names)} using the same engine this '
                 'app uses.'),
         for (final note in notes) PaneNote(note),
       ],

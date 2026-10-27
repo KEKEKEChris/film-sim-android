@@ -6,13 +6,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import '../../model/editor.dart';
+import '../../model/l10n.dart';
 import '../kit/kit.dart';
 import '../theme/theme.dart';
 import 'video_settings.dart';
 
 /// The player's labels (generated/controls.js `VIDEO_LABELS`).
-String videoLabel(EditorModel editor, String key) =>
-    ((editor.catalogue.module['VIDEO_LABELS'] as Map?)?[key] as String?) ?? key;
+String videoLabel(EditorModel editor, String key) {
+  final raw = ((editor.catalogue.module['VIDEO_LABELS'] as Map?)?[key] as String?) ?? key;
+  return t(raw);
+}
 
 class VideoControls extends StatelessWidget {
   const VideoControls({super.key, required this.editor, required this.doc});

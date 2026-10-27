@@ -144,10 +144,15 @@ class Exports(private val activity: Activity, messenger: BinaryMessenger) {
         }
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return file.path
 
+        val relativeDir = if (mime.startsWith("video/")) {
+            "${Environment.DIRECTORY_MOVIES}/Latent Image"
+        } else {
+            "${Environment.DIRECTORY_PICTURES}/Latent Image"
+        }
         val values = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, name)
             put(MediaStore.MediaColumns.MIME_TYPE, mime)
-            put(MediaStore.MediaColumns.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/Latent Image")
+            put(MediaStore.MediaColumns.RELATIVE_PATH, relativeDir)
             put(MediaStore.MediaColumns.IS_PENDING, 1)
         }
         val collection = if (mime.startsWith("video/")) {

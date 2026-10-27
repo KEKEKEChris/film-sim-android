@@ -87,7 +87,6 @@ class _SectionsDialogState extends State<_SectionsDialog> {
           PillButton('Check All',
               onPressed: () => setState(() => _sections = [for (final s in presets.allSections) s.id])),
           PillButton('Check None', onPressed: () => setState(() => _sections = [])),
-          const Spacer(),
           PillButton('Cancel', onPressed: widget.onClose),
           PillButton(widget.preset ? 'Save' : 'Copy',
               variant: ButtonVariant.accent, onPressed: _ready ? _confirm : null),
@@ -116,7 +115,7 @@ class _SectionsDialogState extends State<_SectionsDialog> {
               SizedBox(
                 width: 140,
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(group.first.groupTitle,
+                  Text(t(group.first.groupTitle),
                       style: editorText(context,
                           size: TextSizes.label, color: palette.text.withValues(alpha: .75))),
                   const SizedBox(height: 4),
@@ -240,7 +239,6 @@ class _PresetsDialogState extends State<_PresetsDialog> {
             onPressed: presets.list.isEmpty
                 ? null
                 : () => presets.export([for (final p in presets.list) p.id])),
-        const Spacer(),
         PillButton('Done', variant: ButtonVariant.accent, onPressed: widget.onClose),
       ],
       children: [

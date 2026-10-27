@@ -141,7 +141,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
         child: PillButton('Reset All Settings',
             variant: ButtonVariant.negative, onPressed: () => _confirmReset(context)),
       ),
-      const PaneNote('Restores Fotufilm’s original settings. Your photographs and edits are not '
+      const PaneNote('Restores Latent Image’s original settings. Your photographs and edits are not '
           'changed.'),
     ];
   }
@@ -151,7 +151,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
       context,
       (close) => AlertCard(
         title: 'Reset All Settings?',
-        message: 'This restores Fotufilm’s original settings. Your photos and edits will not '
+        message: 'This restores Latent Image’s original settings. Your photos and edits will not '
             'change.',
         primary: 'Reset',
         variant: ButtonVariant.negative,
@@ -286,12 +286,12 @@ class _SettingsDialogState extends State<SettingsDialog> {
             'over the previous version.'),
         const PaneHeading('Upgrade History', divider: true),
         for (final release in AppVersion.history) ...[
-          Text('${release.version} · ${release.title}',
+          Text('${release.version} · ${t(release.title)}',
               style: editorText(context, weight: FontWeight.w700)),
           for (final change in release.changes)
             Padding(
               padding: const EdgeInsets.only(top: 5),
-              child: Text('• $change', style: editorText(context, color: Palette.of(context).muted)),
+              child: Text('• ${t(change)}', style: editorText(context, color: Palette.of(context).muted)),
             ),
           const SizedBox(height: 10),
         ],

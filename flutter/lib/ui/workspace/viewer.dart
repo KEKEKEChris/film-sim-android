@@ -78,8 +78,9 @@ class EditorViewer extends StatelessWidget {
             ]);
           }),
         ),
-        // A movie's transport.
-        if (doc != null && doc.isMovie) VideoControls(editor: editor, doc: doc),
+        // A movie's transport. Hidden while the keyboard is up so the search field remains visible.
+        if (doc != null && doc.isMovie && MediaQuery.viewInsetsOf(context).bottom == 0)
+          VideoControls(editor: editor, doc: doc),
         // Shown once it holds more than one photo.
         PhotoStrip(editor: editor),
       ])),

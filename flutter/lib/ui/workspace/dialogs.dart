@@ -2,6 +2,7 @@
 // files (export_dialog.dart, shortcuts_dialog.dart).
 import 'package:flutter/widgets.dart';
 
+import '../../model/l10n.dart';
 import '../theme/theme.dart';
 
 /// A dialog's card: its title, its body and its buttons on the right.
@@ -25,8 +26,13 @@ class DialogCard extends StatelessWidget {
     final keyboard = MediaQuery.viewInsetsOf(context).bottom;
     return Container(
       width: width.clamp(0, room.width - 32).toDouble(),
-      constraints: BoxConstraints(maxHeight: room.height - 32 - keyboard),
-      padding: const EdgeInsets.all(24),
+      constraints: BoxConstraints(
+        maxHeight: (room.height - 32 - keyboard).clamp(180.0, room.height - 32),
+      ),
+      padding: EdgeInsets.symmetric(
+        horizontal: room.width < 500 ? 16 : 24,
+        vertical: room.height < 700 || keyboard > 0 ? 16 : 24,
+      ),
       decoration: BoxDecoration(
         color: palette.dark ? const Color(0xFF222222) : const Color(0xFFFFFFFF),
         borderRadius: BorderRadius.circular(14),
@@ -38,7 +44,7 @@ class DialogCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(title,
+            Text(t(title),
                 style: editorText(context, size: TextSizes.dialog, weight: FontWeight.w700)),
             const SizedBox(height: 14),
             Flexible(

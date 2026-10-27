@@ -317,9 +317,10 @@ class _WorkspaceState extends State<Workspace> {
         ? height * .42
         : (height * .44).clamp(Metrics.compactDockMin, Metrics.compactDockMax).toDouble();
     // The picture keeps its room above the tallest dock.
-    final bottom = MediaQuery.paddingOf(context).bottom;
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom;
+    final bottom = keyboard > 0 ? 0.0 : MediaQuery.paddingOf(context).bottom;
     final tallest =
-        constraints.maxHeight - Metrics.compactRail - bottom - Metrics.compactPictureMin;
+        constraints.maxHeight - (keyboard > 0 ? 0 : Metrics.compactRail + bottom) - Metrics.compactPictureMin;
     final dock =
         math.min(layout.dockHeight ?? fallback, math.max(tallest, Metrics.compactDockMin * .5));
     final open = editor.filmOpen || editor.inspectorOpen;
@@ -352,14 +353,21 @@ class _WorkspaceState extends State<Workspace> {
               ),
           ]),
         ),
-        rail,
+        if (keyboard == 0) rail,
       ]);
     }
+    final dockHeight = strip ? Metrics.compactFilmStrip : dock;
+    final maxDockAllowed = math.max(
+        140.0,
+        constraints.maxHeight -
+            (keyboard > 0 ? 0 : Metrics.compactRail + bottom) -
+            (keyboard > 0 ? 40 : Metrics.compactPictureMin));
+    final finalDockHeight = math.min(dockHeight, maxDockAllowed);
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Expanded(child: EditorViewer(editor: editor, onOpen: _open, dropping: _dropping)),
       if (open)
         SizedBox(
-          height: strip ? Metrics.compactFilmStrip : dock,
+          height: finalDockHeight,
           child: DecoratedBox(
             decoration: const BoxDecoration(boxShadow: [
               BoxShadow(color: Color(0x09000000), blurRadius: 18, offset: Offset(0, -4)),
@@ -387,7 +395,7 @@ class _WorkspaceState extends State<Workspace> {
             ),
           ),
         ),
-      rail,
+      if (keyboard == 0) rail,
     ]);
   }
 }

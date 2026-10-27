@@ -602,7 +602,7 @@ class ExportTool {
     path ??= await _chooseFile(filename, '');
     if (path == null) return null;
     editor.video.pause();
-    return _run('Preparing export', () async {
+    final saved = await _run<SavedExport?>('Preparing export', () async {
       final answer = await engine.callWithProgress('exportVideo', {
         ..._request(doc, maxEdge: exportMaxEdge(sizeId(batch: false), cropSize(doc))),
         'format': videoFormat,
@@ -619,11 +619,16 @@ class ExportTool {
                 '${progress['frames']} frames');
       });
       _settings.set('lastVideoExport', current);
-      return _show(SavedExport(
+      return SavedExport(
           filename: answer.json['filename'] as String? ?? filename,
           path: answer.json['path'] as String? ?? path!,
-          location: defaultDirectory ?? path));
+          location: defaultDirectory ?? path);
     });
+    if (saved != null) {
+      _show(saved);
+      await _publish(saved);
+    }
+    return saved;
   }
 
   /// Export Original: the camera RAW file itself, no edit and no size.

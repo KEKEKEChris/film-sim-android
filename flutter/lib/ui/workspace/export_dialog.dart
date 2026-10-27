@@ -130,7 +130,7 @@ class _ExportDialogState extends State<ExportDialog> {
                 onChanged: (v) => setState(() => x.type = v),
               )),
               if (original)
-                const _Detail('Copies the original camera RAW file. Fotufilm edits and the '
+                const _Detail('Copies the original camera RAW file. Latent Image edits and the '
                     'resolution setting are not included.')
               else ...[
                 _SelectRow('Size', PickerField<String>(

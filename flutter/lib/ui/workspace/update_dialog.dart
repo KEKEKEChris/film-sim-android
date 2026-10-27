@@ -33,7 +33,7 @@ class UpdateDialog extends StatelessWidget {
   Widget _downloading(BuildContext context, UpdateDownloading download) {
     final known = download.total > 0;
     return AppDialogCard(
-      title: 'Downloading Fotufilm ${download.version}…',
+      title: 'Downloading Latent Image ${download.version}…',
       width: 400,
       actions: [PillButton('Cancel', onPressed: editor.updates.cancel)],
       children: [
@@ -53,7 +53,7 @@ class UpdateDialog extends StatelessWidget {
   }
 
   Widget _offer(UpdateAvailable offer) => AppDialogCard(
-        title: 'Fotufilm ${offer.version} is available',
+        title: 'Latent Image ${offer.version} is available',
         width: 640,
         actions: [
           if (offer.notes != null) PillButton('Release Notes', onPressed: editor.updates.openNotes),
@@ -63,7 +63,7 @@ class UpdateDialog extends StatelessWidget {
               variant: ButtonVariant.accent, onPressed: editor.updates.install),
         ],
         children: [
-          Text('You have Fotufilm ${offer.current}. The update arrives as a signed installer, like '
+          Text('You have Latent Image ${offer.current}. The update arrives as a signed installer, like '
               'the one this copy was installed from. Installing may ask for your administrator '
               'password.'),
         ],

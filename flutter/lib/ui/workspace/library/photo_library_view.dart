@@ -158,7 +158,7 @@ class _PhotoLibraryViewState extends State<PhotoLibraryView> {
   void _confirmRemove(LibraryFolder folder) => showConfirmDialog(
         context,
         title: 'Remove “${folder.name}”?',
-        body: 'Fotufilm forgets this folder with its ratings and saved edits. '
+        body: 'Latent Image forgets this folder with its ratings and saved edits. '
             'The files themselves are not changed.',
         action: 'Remove',
         onConfirm: () => library.removeFolder(folder.id),
