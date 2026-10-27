@@ -12,9 +12,10 @@ import java.io.File
  */
 object EngineResources {
     private const val ASSETS = "fotufilm"
+    private const val TAG = "LatentImageResources"
 
     fun prepare(context: Context) {
-        val resources = File(context.filesDir, "fotufilm-resources")
+        val resources = resourceDirectory(context)
         val installed = context.packageManager.getPackageInfo(context.packageName, 0).lastUpdateTime
         val stamp = File(resources, ".installed")
         if (stamp.takeIf { it.exists() }?.readText() != installed.toString()) {
@@ -22,8 +23,15 @@ object EngineResources {
             copy(context, ASSETS, resources)
             stamp.writeText(installed.toString())
         }
+        val stocks = File(resources, "Stocks")
+        val stockCount = stocks.listFiles()?.count { it.extension.equals("json", ignoreCase = true) } ?: 0
+        android.util.Log.i(
+            TAG,
+            "prepared resources=${resources.path} stocks=${stocks.path} count=$stockCount " +
+                "simCC=${File(stocks, "simCC.json").isFile}"
+        )
         Os.setenv("FOTUFILM_RESOURCES", resources.path, true)
-        Os.setenv("FOTUFILM_STOCKS", File(resources, "Stocks").path, true)
+        Os.setenv("FOTUFILM_STOCKS", stocks.path, true)
         // Foundation on Android has no home or temporary directory of its own.
         Os.setenv("HOME", context.filesDir.path, true)
         Os.setenv("TMPDIR", context.cacheDir.path, true)
@@ -31,6 +39,26 @@ object EngineResources {
         Os.setenv("XDG_CONFIG_HOME", File(context.filesDir, "config").path, true)
         Os.setenv("XDG_CACHE_HOME", context.cacheDir.path, true)
     }
+
+    fun resourcePath(context: Context): String = resourceDirectory(context).path
+
+    fun diagnostics(context: Context): Map<String, Any> {
+        val resources = resourceDirectory(context)
+        val stocks = File(resources, "Stocks")
+        return mapOf(
+            "resources" to resources.path,
+            "stocks" to stocks.path,
+            "resourceDirectory" to resources.isDirectory,
+            "stocksDirectory" to stocks.isDirectory,
+            "stockCount" to (stocks.listFiles()?.count {
+                it.extension.equals("json", ignoreCase = true)
+            } ?: 0),
+            "simCC" to File(stocks, "simCC.json").isFile,
+        )
+    }
+
+    private fun resourceDirectory(context: Context): File =
+        File(context.filesDir, "fotufilm-resources")
 
     private fun copy(context: Context, asset: String, target: File) {
         val children = context.assets.list(asset).orEmpty()
