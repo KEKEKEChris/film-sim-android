@@ -31,7 +31,7 @@
   },
   "curves": [
     {
-      "dMin": 0.143772,
+      "dMin": 0.086263,
       "gamma": 1.499927,
       "sampled": {
         "density": [
@@ -1978,7 +1978,7 @@
       "toeWidth": 0.246816
     },
     {
-      "dMin": 0.143772,
+      "dMin": 0.086263,
       "gamma": 1.499927,
       "sampled": {
         "density": [
@@ -3925,7 +3925,7 @@
       "toeWidth": 0.246816
     },
     {
-      "dMin": 0.143772,
+      "dMin": 0.086263,
       "gamma": 1.499927,
       "sampled": {
         "density": [

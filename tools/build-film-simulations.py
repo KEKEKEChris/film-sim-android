@@ -118,6 +118,10 @@ def build(spec):
         density = scale_about_midpoint(sampled["density"], spec["contrast"])
         density = offset(density, spec["shift"][index])
         sampled["density"] = [round(v, 6) for v in density]
+        # The validator treats the first sampled point as the curve's actual minimum.
+        # Contrast and colour shifts can move that point, so keep the analytic metadata
+        # in sync or the whole stock directory is rejected as malformed.
+        curve["dMin"] = sampled["density"][0]
 
     if "inhibit" in spec:
         record["couplerInhibition"] = inhibit(None, strength=spec["inhibit"])
