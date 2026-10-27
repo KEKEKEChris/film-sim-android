@@ -2,6 +2,7 @@ package com.kekekechris.latentimage
 
 import android.content.Intent
 import android.os.Bundle
+import io.flutter.plugin.common.MethodChannel
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 
@@ -19,6 +20,14 @@ class MainActivity : FlutterActivity() {
         super.configureFlutterEngine(flutterEngine)
         openedFiles = OpenedFiles(this, flutterEngine.dartExecutor.binaryMessenger)
         exports = Exports(this, flutterEngine.dartExecutor.binaryMessenger)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "fotufilm/resources")
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "path" -> result.success(EngineResources.resourcePath(this))
+                    "diagnostics" -> result.success(EngineResources.diagnostics(this))
+                    else -> result.notImplemented()
+                }
+            }
     }
 
     @Suppress("DEPRECATION")
