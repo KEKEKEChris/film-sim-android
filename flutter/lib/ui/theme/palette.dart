@@ -102,8 +102,90 @@ class Palette {
     },
   );
 
+  /// The warm darkroom: the app's own appearance, and its default. A brown-black page with a
+  /// soft amber accent, so the chrome reads as warm without tinting the photograph itself —
+  /// `canvas` stays near black so the picture always sits on a dark mat.
+  static const warm = Palette(
+    dark: true,
+    text: Color(0xFFF6EEE2),
+    page: Color(0xFF1C1713),
+    panel: Color(0xFF26201B),
+    border: Color(0xFF544A3E),
+    muted: Color(0xFFBFAE99),
+    accent: Color(0xFFDEB27C),
+    selected: Color(0xFF4A3B2A),
+    canvas: Color(0xFF0C0907),
+    gray25: Color(0xFF241B0F),
+    gray100: Color(0xFF302A23),
+    gray300: Color(0xFF4B4035),
+    gray700: Color(0xFFBFAE99),
+    gray800: Color(0xFFDEB27C),
+    fieldFill: Color(0x14FFFFFF),
+    switchOff: Color(0x33FFFFFF),
+    popover: Color(0xFF302A23),
+    tooltip: Color(0xFF3B332C),
+    systemColors: {
+      'Red': Color(0xFFFF453A),
+      'Orange': Color(0xFFFF9F0A),
+      'Yellow': Color(0xFFFFD60A),
+      'Green': Color(0xFF30D158),
+      'Cyan': Color(0xFF64D2FF),
+      'Blue': Color(0xFF0A84FF),
+      'Purple': Color(0xFFBF5AF2),
+      'Pink': Color(0xFFFF375F),
+    },
+  );
+
+  /// Pure black with an electric blue accent: no warmth at all, for judging colour without any
+  /// cast in the surrounding chrome.
+  static const pure = Palette(
+    dark: true,
+    text: Color(0xFFFFFFFF),
+    page: Color(0xFF000000),
+    panel: Color(0xFF0B0B0E),
+    border: Color(0xFF35353D),
+    muted: Color(0xFFA6A6AF),
+    accent: Color(0xFF2F7BFF),
+    selected: Color(0xFF1B3358),
+    canvas: Color(0xFF000000),
+    gray25: Color(0xFFFFFFFF),
+    gray100: Color(0xFF1F1F24),
+    gray300: Color(0xFF2A2A32),
+    gray700: Color(0xFFA6A6AF),
+    gray800: Color(0xFF2F7BFF),
+    fieldFill: Color(0x14FFFFFF),
+    switchOff: Color(0x33FFFFFF),
+    popover: Color(0xFF151519),
+    tooltip: Color(0xFF1F1F24),
+    systemColors: {
+      'Red': Color(0xFFFF453A),
+      'Orange': Color(0xFFFF9F0A),
+      'Yellow': Color(0xFFFFD60A),
+      'Green': Color(0xFF30D158),
+      'Cyan': Color(0xFF64D2FF),
+      'Blue': Color(0xFF0A84FF),
+      'Purple': Color(0xFFBF5AF2),
+      'Pink': Color(0xFFFF375F),
+    },
+  );
+
+  /// The appearances the Settings page offers, in its order: (id, name).
+  static const appearances = <(String, String)>[
+    ('warm', 'Warm darkroom'),
+    ('pure', 'Pure'),
+    ('system', 'Follow the system'),
+  ];
+
+  /// The appearance `id` names, the system's when it is unknown or asks for the system.
+  static Palette named(String? id, {bool systemDark = true}) => switch (id) {
+        'pure' => pure,
+        'light' => light,
+        'system' => systemDark ? darkPalette : light,
+        _ => warm,
+      };
+
   static Palette of(BuildContext context) =>
-      context.dependOnInheritedWidgetOfExactType<PaletteScope>()?.palette ?? light;
+      context.dependOnInheritedWidgetOfExactType<PaletteScope>()?.palette ?? warm;
 }
 
 class PaletteScope extends InheritedWidget {

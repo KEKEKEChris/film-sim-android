@@ -145,6 +145,8 @@ class PanelLayout extends ChangeNotifier {
     editor.endEdit();
     if (!compact) return editor.setPanel(panel);
     final films = panel == Panel.film;
+    // The Film button is the list of films, never the presets that share its dock.
+    if (films) editor.setPresetsTab(false);
     editor.setPanel(panel);
     if (films && editor.inspectorOpen) editor.toggleInspector();
     if (editor.filmOpen != films) editor.toggleFilm();
@@ -153,8 +155,21 @@ class PanelLayout extends ChangeNotifier {
   /// The compact rail's dock showing: the film list or the Film settings for the Film button, the
   /// inspector for the others.
   bool railShowing(Panel panel) =>
-      (panel == Panel.film && editor.filmOpen) ||
+      (panel == Panel.film && editor.filmOpen && !editor.presetsTab) ||
       (!editor.filmOpen && editor.inspectorOpen && editor.panel == panel);
+
+  /// Whether the rail's Presets button's dock is showing: the film library, on its presets tab.
+  bool get presetsShowing => editor.filmOpen && editor.presetsTab;
+
+  /// The rail's Presets button opens the film library's dock on its presets tab, or closes it
+  /// when it is already showing.
+  void railPressedPresets() {
+    if (presetsShowing) return dismiss(PanelSide.film);
+    editor.endEdit();
+    if (editor.inspectorOpen) toggleInspector();
+    if (!editor.filmOpen) editor.toggleFilm();
+    editor.setPresetsTab(true);
+  }
 
   /// A rail button opens its panel's dock, or closes it when it is already open.
   void railPressed(Panel panel) {

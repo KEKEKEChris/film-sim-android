@@ -62,8 +62,9 @@ class PanelDismissButton extends StatelessWidget {
 }
 
 /// The compact layout's rail: each panel's icon over its name, across the bottom, under the docks.
-/// The Film button opens the film list's dock and the others the inspector's; a button reads as
-/// chosen while its dock is open, and closes it when pressed again.
+/// The Presets button opens the film library's presets, the Film button its list of films, and the
+/// others the inspector's; a button reads as chosen while its dock is open, and closes it when
+/// pressed again.
 class CompactRail extends StatelessWidget {
   const CompactRail({super.key, required this.editor});
   final EditorModel editor;
@@ -73,15 +74,33 @@ class CompactRail extends StatelessWidget {
     final palette = Palette.of(context);
     return Container(
       color: palette.panel,
-      padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
+      padding: const EdgeInsets.fromLTRB(6, 4, 6, 0),
       alignment: Alignment.topCenter,
       child: Row(children: [
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: _RailButton(
+              icon: 'bookmark',
+              title: 'Presets',
+              selected: editor.layout.presetsShowing,
+              onPressed: editor.layout.railPressedPresets,
+            ),
+          ),
+        ),
+        Container(
+          width: 1,
+          height: 20,
+          margin: const EdgeInsets.symmetric(horizontal: 1, vertical: 11),
+          color: palette.border,
+        ),
         for (final p in editor.inspectorTabs)
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 2),
               child: _RailButton(
-                panel: p,
+                icon: p.icon,
+                title: p.title,
                 selected: editor.layout.railShowing(p),
                 onPressed: () => editor.layout.railPressed(p),
               ),
@@ -93,8 +112,9 @@ class CompactRail extends StatelessWidget {
 }
 
 class _RailButton extends StatefulWidget {
-  const _RailButton({required this.panel, required this.selected, required this.onPressed});
-  final Panel panel;
+  const _RailButton(
+      {required this.icon, required this.title, required this.selected, required this.onPressed});
+  final String icon, title;
   final bool selected;
   final VoidCallback onPressed;
 
@@ -108,10 +128,10 @@ class _RailButtonState extends State<_RailButton> with PointerTint {
     final palette = Palette.of(context);
     final fg = widget.selected ? palette.onSelected : palette.text;
     return HoverTip(
-      message: widget.panel.title,
+      message: widget.title,
       child: tinted(
         onTap: widget.onPressed,
-        label: widget.panel.title,
+        label: widget.title,
         selected: widget.selected,
         child: Container(
           height: Metrics.compactRailButton,
@@ -126,9 +146,11 @@ class _RailButtonState extends State<_RailButton> with PointerTint {
             borderRadius: BorderRadius.circular(Metrics.radius),
           ),
           child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            AppIcon(widget.panel.icon, size: Metrics.icon, color: fg),
+            AppIcon(widget.icon, size: Metrics.icon, color: fg),
             const SizedBox(height: 3),
-            Text(t(widget.panel.title),
+            Text(t(widget.title),
+                maxLines: 1,
+                overflow: TextOverflow.clip,
                 style: editorText(context,
                     size: TextSizes.label, weight: FontWeight.w500, color: fg)),
           ]),

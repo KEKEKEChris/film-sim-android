@@ -94,6 +94,18 @@ class _SettingsDialogState extends State<SettingsDialog> {
         },
       ),
       const PaneNote('Follows the phone.'),
+      const PaneHeading('Appearance', divider: true),
+      PickerField<String>(
+        label: 'Appearance',
+        detail: 'Choose the colours the editor draws with.',
+        value: _settings.get<String>('appearance') ?? 'warm',
+        options: [
+          for (final (id, name) in Palette.appearances) PickerOption(id, name),
+        ],
+        onChanged: (id) => _settings.set('appearance', id),
+      ),
+      const PaneNote('Warm darkroom is the default. Pure drops every warm tone from the chrome, '
+          'which makes it easier to judge colour; neither tints the photograph.'),
       const PaneHeading('New Photos', divider: true),
       _SettingPicker(
         label: 'Starting Film',

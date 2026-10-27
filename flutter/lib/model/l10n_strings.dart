@@ -732,7 +732,19 @@ const simplifiedChinese = <String, String>{
   "Real-time export progress, path display, and sharing to all apps.": "导出处理具备实时界面进度与路径显示，导出完成后可分享到所有开放分享的应用。",
   "Soft keyboard avoidance for search bar and preset dialogs.": "搜索栏与预设弹窗支持软键盘避让，避免遮挡输入与操作。",
   "Automatic build version increment for direct upgrade installation.": "每次构建版本自动递增，支持 Android 系统直接覆盖升级安装。",
+
+  "Warm darkroom": "暖调暗房",
+  "Pure": "纯净",
+  "Follow the system": "跟随系统",
+  "Choose the colours the editor draws with.": "选择界面使用的配色。",
+  "Warm darkroom is the default. Pure drops every warm tone from the chrome, which makes it easier to judge colour; neither tints the photograph.": "暖调暗房为默认配色。纯净会去掉界面中所有暖色，更利于判断色彩；两者都不会给照片本身染色。",
+
+  "Warm darkroom and pure appearances": "暖调暗房与纯净外观",
+  "The editor draws in a warm darkroom by default; Settings offers a pure black and electric blue alternative.": "界面默认使用暖调暗房配色；设置中提供纯黑配电光蓝的纯净外观。",
+  "The film rail and the darkroom panel are narrower, leaving the photograph more room on a tablet.": "胶片栏与暗房面板收窄，平板上为照片留出更多空间。",
+  "The compact rail gains a Presets button at its leading edge.": "底部标签栏最左侧新增预设入口。",
 };
+
 
 /// The interface in 繁體中文（香港）.
 const traditionalChinese = <String, String>{
@@ -1460,4 +1472,16 @@ const traditionalChinese = <String, String>{
   "Real-time export progress, path display, and sharing to all apps.": "匯出處理具備即時介面進度與路徑顯示，匯出完成後可分享至所有開放分享的應用。",
   "Soft keyboard avoidance for search bar and preset dialogs.": "搜尋欄與預設視窗支援軟鍵盤避讓，避免遮擋輸入與操作。",
   "Automatic build version increment for direct upgrade installation.": "每次構建版本自動遞增，支援 Android 系統直接覆蓋升級安裝。",
+
+  "Warm darkroom": "暖調暗房",
+  "Pure": "純淨",
+  "Follow the system": "跟隨系統",
+  "Choose the colours the editor draws with.": "選擇介面使用的配色。",
+  "Warm darkroom is the default. Pure drops every warm tone from the chrome, which makes it easier to judge colour; neither tints the photograph.": "暖調暗房為預設配色。純淨會去掉介面中所有暖色，更利於判斷色彩；兩者都不會給相片本身染色。",
+
+  "Warm darkroom and pure appearances": "暖調暗房與純淨外觀",
+  "The editor draws in a warm darkroom by default; Settings offers a pure black and electric blue alternative.": "介面預設使用暖調暗房配色；設定中提供純黑配電光藍的純淨外觀。",
+  "The film rail and the darkroom panel are narrower, leaving the photograph more room on a tablet.": "菲林欄與暗房面板收窄，平板上為相片留出更多空間。",
+  "The compact rail gains a Presets button at its leading edge.": "底部標籤欄最左側新增預設入口。",
 };
+

@@ -29,6 +29,8 @@ class AppSettings extends ChangeNotifier {
 
   static const defaults = <String, Object?>{
     'autoFilm': false,
+    // The colours the editor draws with: 'warm' (the default), 'pure', or 'system'.
+    'appearance': 'warm',
     'startingFilm': null,
     'startingFormat': null,
     'grainModel': 'clump',

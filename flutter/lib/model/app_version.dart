@@ -7,6 +7,15 @@ abstract final class AppVersion {
   /// Release notes kept with the app so Settings can explain what changed in each upgrade.
   static const history = <({String version, String title, List<String> changes})>[
     (
+      version: '1.14.3',
+      title: 'Warm darkroom and pure appearances',
+      changes: [
+        'The editor draws in a warm darkroom by default; Settings offers a pure black and electric blue alternative.',
+        'The film rail and the darkroom panel are narrower, leaving the photograph more room on a tablet.',
+        'The compact rail gains a Presets button at its leading edge.',
+      ],
+    ),
+    (
       version: '1.14.2',
       title: 'Gallery picker and export workflow',
       changes: [

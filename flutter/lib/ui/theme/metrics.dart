@@ -16,8 +16,10 @@ abstract final class Metrics {
   static const toolbarGap = 2.0;
 
   // ── Panels ─────────────────────────────────────────────────────────────────────────────────
-  static const filmWidth = 236.0, filmMin = 180.0, filmMax = 480.0, filmCollapsed = 52.0;
-  static const inspectorWidth = 320.0, inspectorMin = 280.0, inspectorMax = 600.0;
+  /// The film rail is only as wide as a thumbnail and its subtitle need, and the darkroom panel
+  /// keeps three quarters of the width it had: the picture gets the rest.
+  static const filmWidth = 140.0, filmMin = 132.0, filmMax = 480.0, filmCollapsed = 52.0;
+  static const inspectorWidth = 198.0, inspectorMin = 190.0, inspectorMax = 600.0;
   static const railWidth = 40.0;
   static const pictureMin = 420.0;
   static const resizerHit = 8.0;
