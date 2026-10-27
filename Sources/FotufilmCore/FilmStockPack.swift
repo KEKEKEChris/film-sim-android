@@ -628,6 +628,15 @@ public struct FilmStockPack: Sendable {
         set { embeddedStockStorage.withLock { $0 = newValue } }
     }
 
+    /// Configure the directory unpacked by a host that cannot expose its files as a bundle.
+    /// Android's APK assets are copied into the app's private files directory by the Flutter host;
+    /// passing that directory through the C interface is more reliable than depending on a process
+    /// environment snapshot made before the Swift runtime was loaded.
+    public static func configureInstalledResources(at directory: URL) {
+        embeddedStockDirectories = [directory.appendingPathComponent("Stocks", isDirectory: true)]
+        _ = reload()
+    }
+
     /// Read every `*.json` in `directory`.
     public static func load(directory: URL) throws -> [String: FilmStockDefinition] {
         let manager = FileManager.default
