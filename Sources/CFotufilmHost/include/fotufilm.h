@@ -66,6 +66,9 @@ void fotufilm_free(char *string);
    ({"importPath", "subjectSelection", "copyImage", "printFrames", "imageExportTypes",
    "hdrExport", ...}). Free with fotufilm_free. */
 char *fotufilm_capabilities(void);
+/* On hosts whose resources are unpacked after the process starts, name the directory containing
+   Stocks/ before creating an engine. The path is copied by the call. */
+void fotufilm_set_resources(const char *directory);
 
 fotufilm_engine *fotufilm_engine_create(char **error);
 void fotufilm_engine_destroy(fotufilm_engine *engine);
