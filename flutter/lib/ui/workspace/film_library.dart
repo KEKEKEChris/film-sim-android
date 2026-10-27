@@ -6,6 +6,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/widgets.dart';
 
 import '../../model/editor.dart';
+import '../../model/l10n.dart';
 import '../../model/negative_document.dart';
 import '../kit/kit.dart';
 import '../theme/theme.dart';
@@ -229,7 +230,7 @@ class StripTile extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
-      label: name,
+      label: t(name),
       excludeSemantics: true,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
@@ -254,7 +255,7 @@ class StripTile extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Text(name,
+          Text(t(name),
               maxLines: 2,
               textAlign: TextAlign.center,
               overflow: TextOverflow.ellipsis,
@@ -321,11 +322,11 @@ class _FilmTypePickerState extends State<_FilmTypePicker> with PointerTint {
         builder: (anchor) => tinted(
           opensMenu: true,
           label: 'Film type',
-          value: widget.selected.title,
+          value: t(widget.selected.title),
           onTap: () => showMenu(anchor, alignEnd: true, width: 170, [
             for (final type in widget.types)
               MenuItem(
-                label: type.title,
+                label: t(type.title),
                 checked: type == widget.selected,
                 onSelected: () => widget.onChanged(type),
               ),
@@ -340,7 +341,7 @@ class _FilmTypePickerState extends State<_FilmTypePicker> with PointerTint {
             ),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               Flexible(
-                child: Text(widget.selected.title,
+                child: Text(t(widget.selected.title),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: editorText(context,
@@ -363,7 +364,7 @@ class LibraryEmpty extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.all(12),
-        child: Text(text, style: editorText(context, color: Palette.of(context).muted)),
+        child: Text(t(text), style: editorText(context, color: Palette.of(context).muted)),
       );
 }
 
@@ -425,10 +426,10 @@ class _StockRowState extends State<StockRow> with PointerTint {
             const SizedBox(width: 8),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(widget.name,
+                Text(t(widget.name),
                     style: editorText(context, weight: FontWeight.w500, color: fg, height: 1.2)),
                 const SizedBox(height: 1),
-                Text(widget.kind,
+                Text(t(widget.kind),
                     style: editorText(context,
                         size: TextSizes.caption,
                         color: widget.selected ? fg.withValues(alpha: .55) : palette.muted)),
@@ -438,7 +439,7 @@ class _StockRowState extends State<StockRow> with PointerTint {
         ]),
       ),
     );
-    return widget.compact ? HoverTip(message: widget.name, child: row) : row;
+    return widget.compact ? HoverTip(message: t(widget.name), child: row) : row;
   }
 }
 

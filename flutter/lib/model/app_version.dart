@@ -7,6 +7,17 @@ abstract final class AppVersion {
   /// Release notes kept with the app so Settings can explain what changed in each upgrade.
   static const history = <({String version, String title, List<String> changes})>[
     (
+      version: '1.14.2',
+      title: 'Gallery picker and export workflow',
+      changes: [
+        'Direct system photo picker and gallery access for choosing photos and videos.',
+        'Custom export folder selection and Latent Image default folder.',
+        'Real-time export progress, path display, and sharing to all apps.',
+        'Soft keyboard avoidance for search bar and preset dialogs.',
+        'Automatic build version increment for direct upgrade installation.',
+      ],
+    ),
+    (
       version: '1.14.1',
       title: 'Latent Image Android improvements',
       changes: [

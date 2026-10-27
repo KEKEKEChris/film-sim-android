@@ -319,8 +319,10 @@ class _WorkspaceState extends State<Workspace> {
     // The picture keeps its room above the tallest dock.
     final keyboard = MediaQuery.viewInsetsOf(context).bottom;
     final bottom = keyboard > 0 ? 0.0 : MediaQuery.paddingOf(context).bottom;
-    final tallest =
-        constraints.maxHeight - (keyboard > 0 ? 0 : Metrics.compactRail + bottom) - Metrics.compactPictureMin;
+    final tallest = constraints.maxHeight -
+        keyboard -
+        (keyboard > 0 ? 0 : Metrics.compactRail + bottom) -
+        Metrics.compactPictureMin;
     final dock =
         math.min(layout.dockHeight ?? fallback, math.max(tallest, Metrics.compactDockMin * .5));
     final open = editor.filmOpen || editor.inspectorOpen;
@@ -339,64 +341,71 @@ class _WorkspaceState extends State<Workspace> {
       final width = (constraints.maxWidth * .45)
           .clamp(Metrics.compactSideMin, Metrics.compactSideMax)
           .toDouble();
-      return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Expanded(
-          child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Expanded(child: EditorViewer(editor: editor, onOpen: _open, dropping: _dropping)),
-            if (open)
-              SizedBox(
-                width: width,
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.only(topLeft: Radius.circular(18)),
-                  child: ColoredBox(color: palette.panel, child: docked),
+      return Padding(
+        padding: EdgeInsets.only(bottom: keyboard),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Expanded(
+            child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              Expanded(child: EditorViewer(editor: editor, onOpen: _open, dropping: _dropping)),
+              if (open)
+                SizedBox(
+                  width: width,
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.only(topLeft: Radius.circular(18)),
+                    child: ColoredBox(color: palette.panel, child: docked),
+                  ),
                 ),
-              ),
-          ]),
-        ),
-        if (keyboard == 0) rail,
-      ]);
+            ]),
+          ),
+          if (keyboard == 0) rail,
+        ]),
+      );
     }
     final dockHeight = strip ? Metrics.compactFilmStrip : dock;
     final maxDockAllowed = math.max(
         140.0,
         constraints.maxHeight -
+            keyboard -
             (keyboard > 0 ? 0 : Metrics.compactRail + bottom) -
             (keyboard > 0 ? 40 : Metrics.compactPictureMin));
     final finalDockHeight = math.min(dockHeight, maxDockAllowed);
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Expanded(child: EditorViewer(editor: editor, onOpen: _open, dropping: _dropping)),
-      if (open)
-        SizedBox(
-          height: finalDockHeight,
-          child: DecoratedBox(
-            decoration: const BoxDecoration(boxShadow: [
-              BoxShadow(color: Color(0x09000000), blurRadius: 18, offset: Offset(0, -4)),
-            ]),
-            child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-              child: ColoredBox(
-                color: palette.panel,
-                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                  _DockGrabber(
-                    onDrag: (dy) => strip
-                        ? _stripPull += dy
-                        : layout.dragDock(dock - dy, tallest),
-                    onEnd: (velocity) {
-                      if (!strip) return layout.releaseDock(velocity, before: dock);
-                      if (_stripPull > 40 || velocity > 700) layout.dismiss(PanelSide.film);
-                      _stripPull = 0;
-                    },
-                    onTap: () => layout.dismiss(
-                        editor.filmOpen ? PanelSide.film : PanelSide.inspector),
-                  ),
-                  Expanded(child: docked),
-                ]),
+    return Padding(
+      padding: EdgeInsets.only(bottom: keyboard),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Expanded(child: EditorViewer(editor: editor, onOpen: _open, dropping: _dropping)),
+        if (open)
+          SizedBox(
+            height: finalDockHeight,
+            child: DecoratedBox(
+              decoration: const BoxDecoration(boxShadow: [
+                BoxShadow(color: Color(0x09000000), blurRadius: 18, offset: Offset(0, -4)),
+              ]),
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                child: ColoredBox(
+                  color: palette.panel,
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                    _DockGrabber(
+                      onDrag: (dy) => strip
+                          ? _stripPull += dy
+                          : layout.dragDock(dock - dy, tallest),
+                      onEnd: (velocity) {
+                        if (!strip) return layout.releaseDock(velocity, before: dock);
+                        if (_stripPull > 40 || velocity > 700) layout.dismiss(PanelSide.film);
+                        _stripPull = 0;
+                      },
+                      onTap: () => layout.dismiss(
+                          editor.filmOpen ? PanelSide.film : PanelSide.inspector),
+                    ),
+                    Expanded(child: docked),
+                  ]),
+                ),
               ),
             ),
           ),
-        ),
-      if (keyboard == 0) rail,
-    ]);
+        if (keyboard == 0) rail,
+      ]),
+    );
   }
 }
 

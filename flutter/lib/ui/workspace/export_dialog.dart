@@ -185,8 +185,19 @@ class _ExportDialogState extends State<ExportDialog> {
         if (exporting)
           Padding(
             padding: const EdgeInsets.only(top: 12),
-            child: Text(editor.status ?? 'Preparing export',
-                style: editorText(context, color: palette.text)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(editor.status ?? 'Preparing export',
+                    style: editorText(context, color: palette.text)),
+                const SizedBox(height: 8),
+                ProgressBar(
+                  value: RegExp(r'(\d+)%').firstMatch(editor.status ?? '')?.group(1) != null
+                      ? (double.tryParse(RegExp(r'(\d+)%').firstMatch(editor.status!)!.group(1)!) ?? 0) / 100.0
+                      : null,
+                ),
+              ],
+            ),
           ),
       ],
     );
@@ -287,8 +298,19 @@ class _ExportDialogState extends State<ExportDialog> {
         if (exporting)
           Padding(
             padding: const EdgeInsets.only(top: 12),
-            child: Text(editor.status ?? 'Preparing export',
-                style: editorText(context, color: palette.text)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(editor.status ?? 'Preparing export',
+                    style: editorText(context, color: palette.text)),
+                const SizedBox(height: 8),
+                ProgressBar(
+                  value: RegExp(r'(\d+)%').firstMatch(editor.status ?? '')?.group(1) != null
+                      ? (double.tryParse(RegExp(r'(\d+)%').firstMatch(editor.status!)!.group(1)!) ?? 0) / 100.0
+                      : null,
+                ),
+              ],
+            ),
           ),
       ],
     );

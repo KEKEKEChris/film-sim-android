@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 
 import '../../app/host_window.dart';
 import '../../model/catalogue.dart';
+import '../../model/l10n.dart';
 import '../kit/kit.dart';
 import '../theme/theme.dart';
 import 'app_dialogs.dart';
@@ -49,7 +50,7 @@ List<MenuItem> legalMenuItems(Catalogue catalogue) => [
       for (final link in ((catalogue.module['LEGAL_MENU'] as Map?)?['links'] as List? ?? const [])
           .cast<Json>())
         MenuItem(
-          label: link['title'] as String,
+          label: t(link['title'] as String),
           icon: link['icon'] as String?,
           link: true,
           onSelected: () => HostWindow.openUrl(link['href'] as String),

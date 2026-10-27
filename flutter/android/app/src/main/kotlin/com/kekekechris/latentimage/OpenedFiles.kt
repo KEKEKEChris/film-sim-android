@@ -35,19 +35,24 @@ class OpenedFiles(private val activity: Activity, messenger: BinaryMessenger) {
                 "open" -> {
                     waiting?.success(emptyList<String>())
                     waiting = result
-                    val types = call.argument<List<String>>("types") ?: listOf("image/" + "*", "video/" + "*")
+                    val types = call.argument<List<String>>("types") ?: listOf("image/*", "video/*")
                     val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
                     intent.addCategory(Intent.CATEGORY_OPENABLE)
-                    intent.setType("*" + "/" + "*")
+                    intent.setType("*/*")
                     intent.putExtra(Intent.EXTRA_MIME_TYPES, types.toTypedArray())
                     intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
-                    activity.startActivityForResult(intent, REQUEST)
+                    try {
+                        activity.startActivityForResult(intent, REQUEST)
+                    } catch (e: Exception) {
+                        waiting = null
+                        result.error("OPEN_FAILED", e.message, null)
+                    }
                 }
                 "openPhotos" -> {
                     waiting?.success(emptyList<String>())
                     waiting = result
-                    val types = call.argument<List<String>>("types") ?: listOf("image/" + "*", "video/" + "*")
-                    activity.startActivityForResult(photoPicker(types), REQUEST_PHOTOS)
+                    val types = call.argument<List<String>>("types") ?: listOf("image/*", "video/*")
+                    launchPhotoPicker(types)
                 }
                 else -> result.notImplemented()
             }
@@ -55,20 +60,76 @@ class OpenedFiles(private val activity: Activity, messenger: BinaryMessenger) {
     }
 
     /**
-     * The system photo picker on Android 13 and later: it shows the gallery itself, with no
-     * storage permission and no file tree to walk. Older phones get a document picker narrowed to
-     * the same types, which their gallery apps answer — the same list in practice, one tap away.
+     * The system photo picker on Android 13 and later (MediaStore.ACTION_PICK_IMAGES): it shows
+     * the gallery itself with photo/video grids, albums and date grouping, with no storage
+     * permission and no file tree to walk. On older devices, it falls back to the system Gallery
+     * (ACTION_PICK), ACTION_GET_CONTENT, and finally ACTION_OPEN_DOCUMENT.
      *
-     * `types` is what the caller asked for: the editor asks for images and video together, so the
-     * picker must not narrow itself to image files or the videos never appear.
+     * `types` is what the caller asked for: images, videos, or both.
      */
-    private fun photoPicker(types: List<String>): Intent {
+    private fun launchPhotoPicker(types: List<String>) {
+        val hasImage = types.any { it.startsWith("image/") }
+        val hasVideo = types.any { it.startsWith("video/") }
+
+        // Strategy 1: Android 13+ System Photo Picker (MediaStore.ACTION_PICK_IMAGES)
+        try {
+            val intent = Intent("android.provider.action.PICK_IMAGES")
+            if (hasImage && !hasVideo) {
+                intent.type = "image/*"
+            } else if (!hasImage && hasVideo) {
+                intent.type = "video/*"
+            }
+            intent.putExtra("android.provider.extra.PICK_IMAGES_MAX", 100)
+            activity.startActivityForResult(intent, REQUEST_PHOTOS)
+            return
+        } catch (_: Exception) {}
+
+        // Strategy 2: System Gallery via ACTION_PICK
+        try {
+            val intent = Intent(Intent.ACTION_PICK)
+            if (hasImage && !hasVideo) {
+                intent.setDataAndType(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "image/*")
+            } else if (!hasImage && hasVideo) {
+                intent.setDataAndType(android.provider.MediaStore.Video.Media.EXTERNAL_CONTENT_URI, "video/*")
+            } else {
+                intent.setDataAndType(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "image/*")
+                intent.putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("image/*", "video/*"))
+            }
+            intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+            activity.startActivityForResult(intent, REQUEST_PHOTOS)
+            return
+        } catch (_: Exception) {}
+
+        // Strategy 3: ACTION_GET_CONTENT
+        try {
+            val intent = Intent(Intent.ACTION_GET_CONTENT)
+            intent.addCategory(Intent.CATEGORY_OPENABLE)
+            if (hasImage && !hasVideo) {
+                intent.type = "image/*"
+            } else if (!hasImage && hasVideo) {
+                intent.type = "video/*"
+            } else {
+                intent.type = "*/*"
+                intent.putExtra(Intent.EXTRA_MIME_TYPES, types.toTypedArray())
+            }
+            intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+            activity.startActivityForResult(intent, REQUEST_PHOTOS)
+            return
+        } catch (_: Exception) {}
+
+        // Fallback: ACTION_OPEN_DOCUMENT
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
         intent.addCategory(Intent.CATEGORY_OPENABLE)
-        intent.setType("*" + "/" + "*")
+        intent.setType("*/*")
         intent.putExtra(Intent.EXTRA_MIME_TYPES, types.toTypedArray())
         intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
-        return intent
+        try {
+            activity.startActivityForResult(intent, REQUEST_PHOTOS)
+        } catch (e: Exception) {
+            val res = waiting
+            waiting = null
+            res?.error("PICK_FAILED", e.message, null)
+        }
     }
 
     /** The picker's answer; false when the result is another request's. */

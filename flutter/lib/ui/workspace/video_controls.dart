@@ -266,13 +266,13 @@ class _Transport extends StatelessWidget {
           ),
           _MenuButton(
             key: const ValueKey('video-quality'),
-            text: playbackQualityLabel(video.quality),
+            text: t(playbackQualityLabel(video.quality)),
             tooltip: playbackQualityHelp,
             enabled: on,
             items: [
               for (final (id, name, _) in playbackQualities)
                 MenuItem(
-                  label: name,
+                  label: t(name),
                   checked: id == video.quality,
                   onSelected: () => video.quality = id,
                 ),

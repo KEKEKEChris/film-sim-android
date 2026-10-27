@@ -20,17 +20,20 @@ Future<List<XFile>> chooseFiles(List<XTypeGroup> groups,
 
 const _androidFiles = MethodChannel('fotufilm/files');
 
-/// Photographs chosen from the gallery rather than from a file tree. Android answers with the
+/// Photographs and videos chosen from the gallery rather than from a file tree. Android answers with the
 /// system photo picker (`openPhotos` in OpenedFiles.kt), which lists what the device has indexed
-/// as a picture and asks for no storage permission; elsewhere the open panel narrowed to images,
+/// as media and asks for no storage permission; elsewhere the open panel narrowed to images,
 /// which is the same thing a desktop has.
-Future<List<XFile>> choosePhotos() async {
+Future<List<XFile>> choosePhotos(
+    {List<String> android = const ['image/*', 'video/*']}) async {
   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-    final paths = await _androidFiles.invokeListMethod<String>('openPhotos') ?? const [];
+    final paths =
+        await _androidFiles.invokeListMethod<String>('openPhotos', {'types': android}) ?? const [];
     return [for (final path in paths) XFile(path, name: path.split('/').last)];
   }
   return openFiles(acceptedTypeGroups: [
     XTypeGroup(label: 'Images', mimeTypes: const ['image/*']),
+    XTypeGroup(label: 'Videos', mimeTypes: const ['video/*']),
   ]);
 }
 

@@ -13,6 +13,7 @@ import 'package:flutter/scheduler.dart';
 import '../app/soundtrack.dart';
 import 'editor.dart';
 import 'file_types.dart';
+import 'l10n.dart';
 
 /// The movie files the editor opens (media-types.js `VIDEO_ACCEPT`).
 const videoExtensions = ['mp4', 'mov', 'm4v', 'webm', 'mkv'];
@@ -117,7 +118,7 @@ String playbackQualityLabel(String? id) => _quality(id).$2;
 
 /// "24 fps", "29.97 fps", or "Variable fps" for a clip that names no rate.
 String frameRateLabel(double rate) {
-  if (!(rate > 0)) return 'Variable fps';
+  if (!(rate > 0)) return t('Variable fps');
   return rate.roundToDouble() == rate ? '${rate.round()} fps' : '${rate.toStringAsFixed(2)} fps';
 }
 
@@ -125,7 +126,7 @@ String frameRateLabel(double rate) {
 String clipSummary(int width, int height, VideoClip clip) => [
       if (width > 0 && height > 0) '$width × $height',
       frameRateLabel(clip.frameRate),
-      if (clip.audio) 'audio',
+      if (clip.audio) t('audio'),
     ].join('   ');
 
 /// 01:02.34, or 1:01:02.34 past an hour.
@@ -414,8 +415,9 @@ class VideoPlayer extends ChangeNotifier {
   /// Chooses movies to open; one brings its folder into the strip, as Open… does.
   Future<void> chooseMovies() async {
     if (!editor.ready || editor.exporting) return;
-    final files =
-        await chooseFiles([fileType('Videos', videoExtensions)], android: const ['video/*']);
+    final files = !kIsWeb && defaultTargetPlatform == TargetPlatform.android
+        ? await choosePhotos(android: const ['video/*'])
+        : await chooseFiles([fileType('Videos', videoExtensions)]);
     await editor.strip.open([
       for (final f in files) PhotoFile(f.name, path: kIsWeb ? null : f.path, read: f.readAsBytes),
     ]);
