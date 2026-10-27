@@ -1,5 +1,8 @@
 import Foundation
 import CFotufilmHost
+#if canImport(FotufilmCore)
+import FotufilmCore
+#endif
 #if canImport(FotufilmImaging)
 import FotufilmImaging
 #endif
