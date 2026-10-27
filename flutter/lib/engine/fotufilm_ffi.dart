@@ -49,7 +49,9 @@ typedef _AnswerFreeDart = void Function(Pointer<FotufilmAnswer>);
 class FotufilmLibrary {
   FotufilmLibrary._(DynamicLibrary lib)
       : _capabilities = lib.lookupFunction<_CapabilitiesC, _CapabilitiesC>('fotufilm_capabilities'),
-        _setResources = lib.lookupFunction<_SetResourcesC, _SetResourcesDart>('fotufilm_set_resources'),
+        _setResources = Platform.isAndroid
+            ? lib.lookupFunction<_SetResourcesC, _SetResourcesDart>('fotufilm_set_resources')
+            : null,
         _free = lib.lookupFunction<_FreeC, _FreeDart>('fotufilm_free'),
         _create = lib.lookupFunction<_CreateC, _CreateC>('fotufilm_engine_create'),
         _describe = lib.lookupFunction<_DescribeC, _DescribeC>('fotufilm_engine_describe'),
@@ -76,7 +78,7 @@ class FotufilmLibrary {
   }
 
   final _CapabilitiesC _capabilities;
-  final _SetResourcesDart _setResources;
+  final _SetResourcesDart? _setResources;
   final _FreeDart _free;
   final _CreateC _create;
   final _DescribeC _describe;
@@ -97,7 +99,7 @@ class FotufilmLibrary {
   void setResources(String path) {
     final nativePath = path.toNativeUtf8();
     try {
-      _setResources(nativePath);
+      _setResources?.call(nativePath);
     } finally {
       malloc.free(nativePath);
     }
