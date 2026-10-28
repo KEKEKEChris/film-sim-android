@@ -98,8 +98,9 @@ class Renderer {
 
   /// Film rows came into view: their pictures develop once nothing else waits.
   void developShown() {
-    if (_dirty) return;
-    if (_running) {
+    // A preview is already waiting: the pass runs once it has been developed, rather than being
+    // dropped — dropping it is what left rows scrolled into view without pictures.
+    if (_dirty || _running) {
       _moreShown = true;
       return;
     }
@@ -369,8 +370,13 @@ class Renderer {
     ];
     final clock = Stopwatch()..start();
     var made = 0;
-    for (final key in keys) {
-      if (set.fresh.contains(key)) continue;
+    while (true) {
+      // The rows on screen go first: a film the reader is looking at is worth more than the
+      // forty behind it, and a develop costs a third of a second before its kernels are warm.
+      final shown = host.shownFilmRows;
+      final key = keys.where((k) => !set.fresh.contains(k) && shown.contains(k)).firstOrNull ??
+          keys.where((k) => !set.fresh.contains(k)).firstOrNull;
+      if (key == null) break;
       // A newer edit or another photograph takes over: this pass's pictures would be of the old
       // one, and the next pass renews the set and starts again.
       if (host.active != doc || set.signature != signature) {
