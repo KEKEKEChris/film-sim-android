@@ -67,7 +67,18 @@ class AdjustmentRow extends StatelessWidget {
       child: IgnorePointer(
         ignoring: !enabled,
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          FieldLabel(label, detail: detail),
+          // The design's row: the name on the left, the value on the right, the slider under them
+          // both — so the track gets the panel's whole width instead of giving the number its end.
+          Row(children: [
+            Expanded(child: FieldLabel(label, detail: detail)),
+            NumberBox(
+              value: value,
+              onSubmitted: (v) {
+                onChanged(v.clamp(range.min, range.max).toDouble());
+                onEnd?.call();
+              },
+            ),
+          ]),
           const SizedBox(height: Metrics.labelGap),
           Row(children: [
             if (ends != null) _End(ends!.$1),
@@ -89,14 +100,6 @@ class AdjustmentRow extends StatelessWidget {
               ),
             ),
             if (ends != null) _End(ends!.$2),
-            const SizedBox(width: 4),
-            NumberBox(
-              value: value,
-              onSubmitted: (v) {
-                onChanged(v.clamp(range.min, range.max).toDouble());
-                onEnd?.call();
-              },
-            ),
           ]),
         ]),
       ),
