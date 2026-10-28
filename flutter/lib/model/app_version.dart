@@ -7,6 +7,18 @@ abstract final class AppVersion {
   /// Release notes kept with the app so Settings can explain what changed in each upgrade.
   static const history = <({String version, String title, List<String> changes})>[
     (
+      version: '1.14.100',
+      title: 'Film previews appear, and exports are JPEG',
+      changes: [
+        'The films floating over the canvas now show the photograph developed on each of them. '
+            'They had never been asked for: the strip never told the engine which rows were on '
+            'screen, so every tile fell back to the imported picture.',
+        'One small copy of the photograph now serves every film in the strip instead of being '
+            'reduced again for each of them.',
+        'Export leads with JPEG at 90 instead of PNG: a sixteen-megapixel frame went from about '
+            'eighteen megabytes to six, and writes in a fraction of the time.',
+      ],
+    ),    (
       version: '1.14.4',
       title: 'A bar of three things, and films that float',
       changes: [
