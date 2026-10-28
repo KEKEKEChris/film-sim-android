@@ -11,8 +11,11 @@ import '../theme/theme.dart';
 import 'dialogs.dart';
 import 'video_controls.dart' show videoLabel;
 
-void showExportDialog(BuildContext context, EditorModel editor) =>
-    showModal(context, (close) => ExportDialog(editor: editor, onClose: close));
+/// On a phone Export rises from the foot of the screen, where the thumb already is; on a desktop it
+/// is a dialog in the middle of the window.
+void showExportDialog(BuildContext context, EditorModel editor) => showModal(
+    context, (close) => ExportDialog(editor: editor, onClose: close),
+    sheet: editor.layout.compact);
 
 class ExportDialog extends StatefulWidget {
   const ExportDialog({super.key, required this.editor, required this.onClose});

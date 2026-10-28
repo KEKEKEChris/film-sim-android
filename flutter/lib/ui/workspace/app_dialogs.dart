@@ -123,7 +123,8 @@ class AppDialogCard extends StatelessWidget {
       constraints: BoxConstraints(maxHeight: room.height - 48),
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
       decoration: BoxDecoration(
-        color: palette.dark ? const Color(0xFF222222) : const Color(0xFFFFFFFF),
+        // The appearance's elevated surface, as the workspace's other dialogs take.
+        color: palette.popover,
         borderRadius: BorderRadius.circular(14),
         boxShadow: const [BoxShadow(color: Color(0x33000000), blurRadius: 40, offset: Offset(0, 10))],
       ),

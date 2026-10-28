@@ -315,9 +315,10 @@ class _AnchoredLayout extends SingleChildLayoutDelegate {
       above != old.above;
 }
 
-/// A modal over the whole window: a dimmed backdrop and `child` centred on it.
+/// A modal over the whole window: a dimmed backdrop and `child` centred on it — or, as `sheet`, on
+/// its foot, sliding up as a phone's bottom sheet does.
 AnchoredOverlay showModal(BuildContext context, Widget Function(VoidCallback close) builder,
-    {bool dismissible = true}) {
+    {bool dismissible = true, bool sheet = false}) {
   final still = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
   final handle = showOverlay(
     context,
@@ -330,14 +331,24 @@ AnchoredOverlay showModal(BuildContext context, Widget Function(VoidCallback clo
       ),
       AnimatedPadding(
         duration: const Duration(milliseconds: 120),
-        padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-        child: Center(
+        padding: EdgeInsets.only(
+          left: sheet ? 8 : 0,
+          right: sheet ? 8 : 0,
+          bottom: MediaQuery.viewInsetsOf(context).bottom + (sheet ? 8 : 0),
+        ),
+        child: Align(
+          alignment: sheet ? Alignment.bottomCenter : Alignment.center,
           child: FadeTransition(
-          opacity: shown,
-          child: still
-              ? builder(close)
-              : ScaleTransition(
-                  scale: Tween(begin: .96, end: 1.0).animate(shown), child: builder(close)),
+            opacity: shown,
+            child: still
+                ? builder(close)
+                : sheet
+                    ? SlideTransition(
+                        position: Tween(begin: const Offset(0, .05), end: Offset.zero)
+                            .animate(shown),
+                        child: builder(close))
+                    : ScaleTransition(
+                        scale: Tween(begin: .96, end: 1.0).animate(shown), child: builder(close)),
           ),
         ),
       ),

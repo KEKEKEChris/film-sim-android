@@ -39,12 +39,13 @@ class SavedExportNotice extends StatelessWidget {
         child: Appear(key: ValueKey(saved), rise: 8, child: _saved(context, saved)));
   }
 
-  static Widget _card(Widget child) => Container(
+  static Widget _card(BuildContext context, Widget child) => Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFF222222),
-          border: Border.all(color: const Color(0xFF666666)),
-          borderRadius: BorderRadius.circular(8),
+          // The appearance's elevated surface, so the notice belongs to the room it appears in.
+          color: Palette.of(context).popover,
+          border: Border.all(color: Palette.of(context).border),
+          borderRadius: BorderRadius.circular(18),
         ),
         child: child,
       );
@@ -68,6 +69,7 @@ class SavedExportNotice extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: _card(
+          context,
           narrow
               ? Column(
                   mainAxisSize: MainAxisSize.min,

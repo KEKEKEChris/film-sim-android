@@ -176,7 +176,7 @@ class _TitleBlock extends StatelessWidget {
           Text(doc.name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: editorText(context, size: TextSizes.label, color: palette.text3)),
+              style: editorText(context, size: TextSizes.label, color: palette.muted)),
         ],
       ],
     );

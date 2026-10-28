@@ -34,7 +34,8 @@ class DialogCard extends StatelessWidget {
         vertical: room.height < 700 || keyboard > 0 ? 16 : 24,
       ),
       decoration: BoxDecoration(
-        color: palette.dark ? const Color(0xFF222222) : const Color(0xFFFFFFFF),
+        // The elevated surface, so a dialog is the appearance's colour rather than a neutral grey.
+        color: palette.popover,
         borderRadius: BorderRadius.circular(14),
         boxShadow: const [BoxShadow(color: Color(0x33000000), blurRadius: 40, offset: Offset(0, 10))],
       ),
