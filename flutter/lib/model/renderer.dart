@@ -16,7 +16,8 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
-import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, debugPrint, defaultTargetPlatform;
 
 import '../engine/engine.dart';
 import '../engine/presenter.dart';
@@ -344,11 +345,11 @@ class Renderer {
     }
   }
 
-  /// Every film's picture of the photograph, in one call, as soon as the photograph settles: the
-  /// engine reduces the frame to the strip's size once and develops each film from that. Asking
-  /// one film at a time — and only for the rows on screen — meant a tile scrolled into view showed
-  /// the imported photograph until (if ever) its turn came, and one film that failed stopped the
-  /// rest; the whole strip is a second's work once, and never again until the edit changes.
+  /// Every film's picture of the photograph, as soon as the photograph settles: the engine reduces
+  /// the frame to the strip's size once and develops each film from that. Asking only for the rows
+  /// on screen meant a tile scrolled into view kept showing the imported photograph until (if ever)
+  /// its turn came; the whole strip is a second's work, once, and never again until the edit
+  /// changes. A film that fails is skipped on its own, so it cannot cost the others their pictures.
   Future<void> _filmThumbnails(PhotoDocument doc) async {
     final set = doc.filmThumbnails;
     final base = Map<String, dynamic>.of(doc.edit)..remove('stock');
@@ -362,41 +363,21 @@ class Renderer {
       for (final s in host.stocks)
         if (!negative || s['readsNegative'] == true) s['id'] as String,
     ];
-    final pending = [
-      for (final k in keys)
-        if (!set.fresh.contains(k)) k,
-    ];
-    if (pending.isEmpty) return;
-    // In batches, so a slider dragged while the strip fills is not kept waiting for all of them.
-    for (var start = 0; start < pending.length; start += _stripBatch) {
+    for (final (index, key) in keys.indexed) {
+      if (set.fresh.contains(key)) continue;
       // A newer edit or another photograph takes over: this pass's pictures would be of the old
-      // one. The next pass renews the set and starts again.
+      // one, and the next pass renews the set and starts again.
       if (host.active != doc || set.signature != signature) return;
-      final batch = pending.sublist(start, math.min(start + _stripBatch, pending.length));
-      final requests = [
-        for (final key in batch)
-          {
-            ..._request(doc, thumbnailEdit(doc.edit, key.isEmpty ? null : key),
-                maxEdge: _stripEdge, draft: true),
-            'original': false,
-          },
-      ];
-      final answer = await engine.call('filmStrip', {'films': batch, 'requests': requests});
-      for (final key in batch) {
-        // '' is Normal, and a payload cannot be named ''.
-        final bytes = answer.bytes(key.isEmpty ? 'none' : key);
-        if (bytes != null) set.images[key] = await decodePng(bytes);
-        // A film that failed is not asked again until the edit changes, and keeps what it showed.
-        set.fresh.add(key);
-      }
-      host.rendered();
+      await _thumbnail(doc, set, key, thumbnailEdit(doc.edit, key.isEmpty ? null : key),
+          _stripEdge, notify: false);
+      // The strip fills as it goes, without a rebuild for every film.
+      if (index % 8 == 7) host.rendered();
     }
+    host.rendered();
   }
 
-  /// The strip's pictures: as wide as a tile, and no larger. A batch is small enough that the
-  /// engine is free again in a fraction of a second.
+  /// The strip's pictures: as wide as a tile, and no larger.
   static const _stripEdge = 160;
-  static const _stripBatch = 16;
 
   /// Each preset row: the photograph with the preset pasted on, without grain or halation.
   Future<void> _presetThumbnails(PhotoDocument doc) async {
@@ -439,8 +420,10 @@ class Renderer {
     }
   }
 
-  Future<void> _thumbnail(
-      PhotoDocument doc, ThumbnailSet set, String key, Json edit, int maxEdge) async {
+  /// One small picture, into `set`. `notify` tells the editor a picture arrived: a pass that fills
+  /// the whole strip paces those itself rather than a rebuild for every film.
+  Future<void> _thumbnail(PhotoDocument doc, ThumbnailSet set, String key, Json edit, int maxEdge,
+      {bool notify = true}) async {
     try {
       final answer = await engine.call('render', {
         ..._request(doc, edit, maxEdge: maxEdge, draft: true),
@@ -448,9 +431,10 @@ class Renderer {
       });
       final bytes = answer.bytes('preview');
       if (bytes != null) set.images[key] = await decodePng(bytes);
-      host.rendered();
-    } catch (_) {
-      // The row keeps what it showed.
+      if (notify) host.rendered();
+    } catch (e) {
+      // The row keeps what it showed. The log says which film, and why.
+      debugPrint('latent strip: ${key.isEmpty ? 'normal' : key} failed: $e');
     }
     set.fresh.add(key);
   }
