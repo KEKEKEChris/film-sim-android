@@ -368,14 +368,17 @@ class Renderer {
       for (final s in host.stocks)
         if (!negative || s['readsNegative'] == true) s['id'] as String,
     ];
+    // The first fill after a photograph is opened develops every film, so scrolling never finds
+    // a row still showing the imported photograph. After an edit, only the rows on screen are
+    // worth a third of a second each; the rest come back as they are scrolled to.
+    final wholeStrip = set.images.isEmpty;
     final clock = Stopwatch()..start();
     var made = 0;
     while (true) {
-      // The rows on screen go first: a film the reader is looking at is worth more than the
-      // forty behind it, and a develop costs a third of a second before its kernels are warm.
       final shown = host.shownFilmRows;
-      final key = keys.where((k) => !set.fresh.contains(k) && shown.contains(k)).firstOrNull ??
-          keys.where((k) => !set.fresh.contains(k)).firstOrNull;
+      final wanted = wholeStrip ? keys : keys.where(shown.contains).toList();
+      final key = wanted.where((k) => !set.fresh.contains(k) && shown.contains(k)).firstOrNull ??
+          wanted.where((k) => !set.fresh.contains(k)).firstOrNull;
       if (key == null) break;
       // A newer edit or another photograph takes over: this pass's pictures would be of the old
       // one, and the next pass renews the set and starts again.
@@ -386,6 +389,9 @@ class Renderer {
       await _thumbnail(doc, set, key, thumbnailEdit(doc.edit, key.isEmpty ? null : key),
           _stripEdge, notify: false);
       made++;
+      // A picture at a time, so a row is drawn as soon as its own is made rather than when the
+      // whole strip is done.
+      host.rendered();
     }
     debugPrint('latent strip: $made of ${keys.length} in ${clock.elapsedMilliseconds} ms');
     host.rendered();

@@ -30,8 +30,6 @@ object EngineResources {
             "prepared resources=${resources.path} stocks=${stocks.path} count=$stockCount " +
                 "simCC=${File(stocks, "simCC.json").isFile}"
         )
-        // Every host call's duration to the log, while the strip's cost is being measured.
-        Os.setenv("FOTUFILM_HOST_TIMINGS", "1", true)
         Os.setenv("FOTUFILM_RESOURCES", resources.path, true)
         Os.setenv("FOTUFILM_STOCKS", stocks.path, true)
         // Foundation on Android has no home or temporary directory of its own.
