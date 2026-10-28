@@ -327,7 +327,9 @@ class EditorModel extends ChangeNotifier implements RenderHost {
 
   /// The engine's films (`prepare`'s catalogue), again after a film pack changes them.
   Future<void> loadStocks([EngineConnection? via]) async {
-    final prepared = await (via ?? engine!).call('prepare');
+    // Without the solved meter tables: this editor develops natively, and the browser's tables
+    // cost two and a half seconds to build for every installed film.
+    final prepared = await (via ?? engine!).call('prepare', {'meters': false});
     final ids = ((prepared.json['stocks'] as List?) ?? const []).cast<String>().toSet();
     stocks = [
       for (final entry in ((prepared.json['catalogue'] as List?) ?? const []).cast<Json>())

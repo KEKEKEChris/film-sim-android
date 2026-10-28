@@ -352,7 +352,8 @@ class Renderer {
   Future<void> _filmThumbnails(PhotoDocument doc) async {
     final set = doc.filmThumbnails;
     final base = Map<String, dynamic>.of(doc.edit)..remove('stock');
-    set.renew(jsonEncode(base));
+    final signature = jsonEncode(base);
+    set.renew(signature);
     // '' is Normal, the row without a film. A negative is read only as a film that has a
     // negative.
     final negative = doc.edit['negative'] != null;
@@ -368,7 +369,9 @@ class Renderer {
     if (pending.isEmpty) return;
     // In batches, so a slider dragged while the strip fills is not kept waiting for all of them.
     for (var start = 0; start < pending.length; start += _stripBatch) {
-      if (_stale(doc)) return;
+      // A newer edit or another photograph takes over: this pass's pictures would be of the old
+      // one. The next pass renews the set and starts again.
+      if (host.active != doc || set.signature != signature) return;
       final batch = pending.sublist(start, math.min(start + _stripBatch, pending.length));
       final requests = [
         for (final key in batch)

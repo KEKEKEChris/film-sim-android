@@ -7,16 +7,18 @@ import FotufilmCore
 /// output media, and its settings catalogue. The browser build writes these as files
 /// (tools/build-wasm.sh); a native host answers them from the loaded packs.
 public enum WebStockCatalogue {
-    /// Output media for one film, with the screen conversions a negative offers.
-    public static func media(for stock: FilmStock) -> [String: Any] {
+    /// Output media for one film, with the screen conversions a negative offers. `meters` builds
+    /// the solved exposure tables a browser host interpolates; an editor that develops natively
+    /// reads none of them, and solving 513 stops for every film is what made the app's start wait.
+    public static func media(for stock: FilmStock, meters: Bool = true) -> [String: Any] {
         ["default": PrintPaper.default(for: stock).id,
          "choices": PrintPaper.choices(for: stock).map { medium -> [String: Any] in
              var entry: [String: Any] = ["id": medium.id, "name": medium.name, "detail": medium.detail]
              if medium == .screen && !stock.isReflectionPrint {
-                 let fixed = DigitalReferenceStyle.autoLevels.receiverLevels(for: stock)
                  entry["screenConversions"] = DigitalReferenceStyle.allCases.map { style -> [String: Any] in
                      var conversion: [String: Any] = ["id": style.id, "name": style.name, "detail": style.detail]
-                     if style == .autoLevels {
+                     if meters, style == .autoLevels {
+                         let fixed = DigitalReferenceStyle.autoLevels.receiverLevels(for: stock)
                          // Native-solved affine samples; browser hosts interpolate the small table
                          // rather than reproducing film characteristic curves in JavaScript.
                          // A colour negative's `reads` let them balance its records too.
@@ -40,7 +42,7 @@ public enum WebStockCatalogue {
                      return conversion
                  }
              }
-             if medium == .labScan && !stock.isReversal && !stock.isReflectionPrint {
+             if meters, medium == .labScan && !stock.isReversal && !stock.isReflectionPrint {
                  // Lab Scan's per-frame setup, which the browser solves from the frame's median
                  // and highlight, before the edit's exposure, through each record's reads.
                  let points = LabScanTiming.profilePoints(for: stock)
@@ -63,14 +65,14 @@ public enum WebStockCatalogue {
     /// default medium is an editor edit's, Digital Reference as the Mac app's editor opens a film
     /// on it, which is what a host develops when the edit names none (`WebNativeEdit.document`).
     /// The browser's own catalogue keeps the medium its base pack was built on.
-    public static func entries() throws -> [[String: Any]] {
+    public static func entries(meters: Bool = true) throws -> [[String: Any]] {
         let stocks = FilmStock.presets
         let definitions = FilmStock.presetDefinitions
         let profiles = try JSONSerialization.jsonObject(
             with: WebProfileCatalogue.data(definitions)) as? [String: Any] ?? [:]
         return stocks.keys.sorted().compactMap { id in
             guard let stock = stocks[id], let profile = profiles[id] as? [String: Any] else { return nil }
-            let media = media(for: stock)
+            let media = media(for: stock, meters: meters)
             var entry: [String: Any] = [
                 "id": id, "name": stock.name, "layeredTransport": stock.donorLayers.isEmpty,
                 "profile": profile, "available": profile["available"] ?? [],

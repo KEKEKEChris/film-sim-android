@@ -82,7 +82,8 @@ public final class HostService {
         switch method {
         case "prepare":
             return try answer(["stocks": engine.stockIDs, "backend": engine.backendName,
-                               "catalogue": try catalogue()])
+                               "catalogue": try catalogue(
+                                   meters: parameters["meters"] as? Bool ?? true)])
         case "import":
             guard let payload, payload.count > 0 else {
                 throw HostEngine.Failure(description: "The photograph's bytes did not arrive.")
@@ -244,11 +245,14 @@ public final class HostService {
         developed = nil
     }
 
-    /// The film library, built once: the screen conversions solve their meter tables.
-    private func catalogue() throws -> [[String: Any]] {
+    /// The film library, built once: the screen conversions solve their meter tables. `meters`
+    /// asks for those tables, which only a browser host reads — solving them for every film is
+    /// two and a half seconds of the app's start.
+    private func catalogue(meters: Bool = true) throws -> [[String: Any]] {
         if let catalogueEntries { return catalogueEntries }
-        let entries = try WebStockCatalogue.entries()
-        catalogueEntries = entries
+        let entries = try WebStockCatalogue.entries(meters: meters)
+        // Only the full catalogue is kept: it is the one the desktop and the browser ask for.
+        if meters { catalogueEntries = entries }
         return entries
     }
 
