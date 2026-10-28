@@ -404,6 +404,32 @@ void showMoreOptions(BuildContext anchor, EditorCommands commands) {
   final steps = editor.history.timeline;
   void open(Panel panel) => editor.layout.choosePanel(panel);
   final sections = <List<MenuItem>>[
+    // The three-part bar has no Add media of its own, and a phone's drawer no longer lists films,
+    // so importing lives here.
+    if (editor.layout.compact || mobilePlatform)
+      [
+        MenuItem(
+          label: 'Add Photos…',
+          icon: 'plus',
+          onSelected: editor.ready && !exporting ? commands.actions.openGallery : null,
+        ),
+        MenuItem(
+          label: 'From Files…',
+          icon: 'folder',
+          onSelected: editor.ready && !exporting ? commands.actions.openFiles : null,
+        ),
+        // The bar keeps three things, so Undo and Redo live here.
+        MenuItem(
+          label: editor.history.undo,
+          icon: 'undo',
+          onSelected: (doc?.history.past.isNotEmpty ?? false) && !exporting ? editor.undo : null,
+        ),
+        MenuItem(
+          label: editor.history.redo,
+          icon: 'redo',
+          onSelected: (doc?.history.future.isNotEmpty ?? false) && !exporting ? editor.redo : null,
+        ),
+      ],
     // What the three-part bar has no room for: the histogram and Reset.
     if (editor.layout.compact || mobilePlatform)
       [
