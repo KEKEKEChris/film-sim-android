@@ -64,8 +64,9 @@ Json thumbnailEdit(Json edit, String? stock) {
   final next = copyEdit(edit);
   next['stock'] = stock;
   next['halationModel'] = 'legacy';
-  (next['profile'] as Map)['halation'] = 0;
-  (next['params'] as Map)['grain'] = 0;
+  // An edit that carries neither keeps neither: a throw here would cost the whole strip.
+  if (next['profile'] case final Map<String, dynamic> profile) profile['halation'] = 0;
+  if (next['params'] case final Map<String, dynamic> params) params['grain'] = 0;
   return next;
 }
 

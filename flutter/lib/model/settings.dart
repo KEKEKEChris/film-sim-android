@@ -46,7 +46,10 @@ class AppSettings extends ChangeNotifier {
     'videoBitrate': 'automatic',
     'videoProcessing': 'full',
     'videoPlaybackQuality': 'fine',
-    'photoQuality': 'accurate',
+    // The preview develops with the fast schedule — the film's transcendentals approximated —
+    // and an export that used the exact one took several times as long for a difference the
+    // screen never showed. Exports follow the preview unless Accurate is chosen.
+    'photoQuality': 'fast',
     'lastPhotoExport': null,
     'lastVideoExport': null,
     // Empty means the platform default: Pictures/Latent Image on Android, or a save panel elsewhere.

@@ -295,11 +295,18 @@ class EditorModel extends ChangeNotifier implements RenderHost {
   Future<void> start() async {
     try {
       startup.value = StartupState.connecting;
+      final clock = Stopwatch()..start();
       final engine = await connectEngine();
+      // Timings, for the log: the engine's own opening is the slow half of a launch.
+      debugPrint('latent start: engine ${clock.elapsedMilliseconds} ms');
+      clock.reset();
       startup.value = StartupState.loadingFilms;
       await loadStocks(engine);
+      debugPrint('latent start: stocks ${clock.elapsedMilliseconds} ms');
+      clock.reset();
       final address = engine.address;
       if (address != null) presenter = await NativePresenter.attach(address);
+      debugPrint('latent start: presenter ${clock.elapsedMilliseconds} ms');
       this.engine = engine;
       renderer = Renderer(engine: engine, catalogue: catalogue, host: this, presenter: presenter);
       // A screen with more or less light above white takes the photograph developed for it.

@@ -133,6 +133,8 @@ public final class HostService {
             return try answer([:])
         case "thumbnail":
             return try thumbnail(parameters, payload: payload)
+        case "filmStrip":
+            return try filmStrip(parameters)
         case "release":
             if let handle = parameters["handle"] as? Int {
                 lock.lock()
@@ -438,7 +440,7 @@ public final class HostService {
         return prepared
     }
 
-    private func render(_ params: Data) throws -> Answer {
+    func render(_ params: Data) throws -> Answer {
         let started = DispatchTime.now().uptimeNanoseconds
         let prepared = try prepare(params)
         let (request, image, geometry) = (prepared.request, prepared.image, prepared.geometry)

@@ -10,7 +10,8 @@
 import 'dart:async';
 
 import 'package:file_selector/file_selector.dart';
-import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, kIsWeb;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, debugPrint, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/services.dart'
     show MethodChannel, MissingPluginException, PlatformException;
 
@@ -201,7 +202,7 @@ class ExportTool {
     editor.notify();
   }
 
-  String get photoQuality => _settings.get<String>('photoQuality') ?? 'accurate';
+  String get photoQuality => _settings.get<String>('photoQuality') ?? 'fast';
 
   /// The settings of the last photo, or movie, exported, offered back (Use Last Export
   /// Settings).
@@ -512,7 +513,11 @@ class ExportTool {
     _remember(batch: false);
     final saved = await _queue(filename, [doc.handle], (engine, job) async {
       _report(job, 'Exporting $filename');
+      final clock = Stopwatch()..start();
       final answer = await engine.callInBackground('export', request);
+      // Timings, for the log: what a 16-megapixel export actually costs.
+      debugPrint('latent export: ${clock.elapsedMilliseconds} ms '
+          '(${delivered(doc).width}x${delivered(doc).height}, $type, $photoQuality)');
       return SavedExport(
           filename: answer.json['filename'] as String? ?? filename,
           path: answer.json['path'] as String? ?? destination,

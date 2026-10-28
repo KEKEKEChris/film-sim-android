@@ -344,9 +344,11 @@ class Renderer {
     }
   }
 
-  /// Each film row on screen: the photograph on that film, without grain or halation. Rows out
-  /// of view wait until they scroll in; the set is read again after each picture, so rows that
-  /// came into view meanwhile are not missed.
+  /// Every film's picture of the photograph, in one call, as soon as the photograph settles: the
+  /// engine reduces the frame to the strip's size once and develops each film from that. Asking
+  /// one film at a time — and only for the rows on screen — meant a tile scrolled into view showed
+  /// the imported photograph until (if ever) its turn came, and one film that failed stopped the
+  /// rest; the whole strip is a second's work once, and never again until the edit changes.
   Future<void> _filmThumbnails(PhotoDocument doc) async {
     final set = doc.filmThumbnails;
     final base = Map<String, dynamic>.of(doc.edit)..remove('stock');
@@ -359,13 +361,39 @@ class Renderer {
       for (final s in host.stocks)
         if (!negative || s['readsNegative'] == true) s['id'] as String,
     ];
-    while (!_stale(doc)) {
-      final shown = host.shownFilmRows;
-      final key = keys.where((k) => shown.contains(k) && !set.fresh.contains(k)).firstOrNull;
-      if (key == null) return;
-      await _thumbnail(doc, set, key, thumbnailEdit(doc.edit, key.isEmpty ? null : key), 160);
+    final pending = [
+      for (final k in keys)
+        if (!set.fresh.contains(k)) k,
+    ];
+    if (pending.isEmpty) return;
+    // In batches, so a slider dragged while the strip fills is not kept waiting for all of them.
+    for (var start = 0; start < pending.length; start += _stripBatch) {
+      if (_stale(doc)) return;
+      final batch = pending.sublist(start, math.min(start + _stripBatch, pending.length));
+      final requests = [
+        for (final key in batch)
+          {
+            ..._request(doc, thumbnailEdit(doc.edit, key.isEmpty ? null : key),
+                maxEdge: _stripEdge, draft: true),
+            'original': false,
+          },
+      ];
+      final answer = await engine.call('filmStrip', {'films': batch, 'requests': requests});
+      for (final key in batch) {
+        // '' is Normal, and a payload cannot be named ''.
+        final bytes = answer.bytes(key.isEmpty ? 'none' : key);
+        if (bytes != null) set.images[key] = await decodePng(bytes);
+        // A film that failed is not asked again until the edit changes, and keeps what it showed.
+        set.fresh.add(key);
+      }
+      host.rendered();
     }
   }
+
+  /// The strip's pictures: as wide as a tile, and no larger. A batch is small enough that the
+  /// engine is free again in a fraction of a second.
+  static const _stripEdge = 160;
+  static const _stripBatch = 16;
 
   /// Each preset row: the photograph with the preset pasted on, without grain or halation.
   Future<void> _presetThumbnails(PhotoDocument doc) async {

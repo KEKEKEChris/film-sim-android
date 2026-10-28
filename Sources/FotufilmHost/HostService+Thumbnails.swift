@@ -4,6 +4,44 @@ import Foundation
 /// being edited is decoded, the others show these until they are chosen. The photo library's grid
 /// draws the files of the folders the host reads from these too.
 extension HostService {
+    /// Every film's picture of the shown photograph, in one call. The editor sends the same render
+    /// request once per film; the scene is reduced once (the reduction is kept), and every answer
+    /// comes back together. Asking one film at a time cost a crossing of the bridge each, which is
+    /// what made the strip crawl as it scrolled, and one film that failed stopped the rest.
+    func filmStrip(_ parameters: [String: Any]) throws -> Answer {
+        let films = (parameters["films"] as? [String]) ?? []
+        let requests = (parameters["requests"] as? [[String: Any]]) ?? []
+        var images: [String: [UInt8]] = [:]
+        var failed: [String: String] = [:]
+        for (index, film) in films.enumerated() {
+            guard index < requests.count else { break }
+            // '' is Normal, the row without a film; a payload cannot be named ''.
+            let name = film.isEmpty ? "none" : film
+            do {
+                let data = try JSONSerialization.data(withJSONObject: requests[index])
+                guard let png = payload("preview", of: try render(data)) else {
+                    failed[name] = "The develop answered without a picture."
+                    continue
+                }
+                images[name] = png
+            } catch {
+                // One film's failure is its own: the strip keeps the others.
+                failed[name] = (error as? HostEngine.Failure)?.description ?? "\(error)"
+            }
+        }
+        return try answer(["films": films, "failed": failed], images: images)
+    }
+
+    /// A named byte range of an answer, as the editor reads it across the bridge.
+    private func payload(_ name: String, of answer: Answer) -> [UInt8]? {
+        guard let body = try? JSONSerialization.jsonObject(with: answer.json) as? [String: Any],
+              let ranges = body["payloads"] as? [String: [Int]],
+              let range = ranges[name], range.count == 2,
+              range[0] >= 0, range[1] >= 0, range[0] + range[1] <= answer.payload.count
+        else { return nil }
+        return Array(answer.payload[range[0]..<(range[0] + range[1])])
+    }
+
     func thumbnail(_ parameters: [String: Any], payload: UnsafeRawBufferPointer?) throws -> Answer {
         let maxEdge = max(16, min(1024, parameters["maxEdge"] as? Int ?? 256))
         let picture: (pixels: [UInt8], width: Int, height: Int)
