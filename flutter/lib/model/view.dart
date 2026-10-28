@@ -2,9 +2,12 @@
 import 'dart:math' as math;
 import 'dart:ui';
 
+import '../app/touch_scale.dart' show mobilePlatform;
+
 class ViewState {
-  /// How far the fitted photograph stays from the viewer's edges.
-  static const fitInset = 16.0;
+  /// How far the fitted photograph stays from the viewer's edges. A phone gives the picture all the
+  /// room it has: its longest edge touches both ends, as the design asks.
+  static double get fitInset => mobilePlatform ? 0.0 : 16.0;
 
   /// The viewer's size in logical pixels and the screen's pixel ratio.
   Size viewer = Size.zero;
@@ -21,7 +24,7 @@ class ViewState {
 
   double fitScale(Size photo) {
     if (viewer.isEmpty || photo.isEmpty) return 1;
-    const inset = fitInset;
+    final inset = fitInset;
     return math
         .min((viewer.width - inset * 2) / photo.width, (viewer.height - inset * 2) / photo.height)
         .clamp(0.01, 64.0);

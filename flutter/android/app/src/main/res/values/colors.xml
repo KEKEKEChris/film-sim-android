@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The warm darkroom's page and the icon's ground, so the splash before Flutter draws its first
+     frame is already the colour of the app. -->
+<resources>
+    <color name="warm_page">#1C1713</color>
+    <color name="ic_launcher_background">#1C1713</color>
+</resources>

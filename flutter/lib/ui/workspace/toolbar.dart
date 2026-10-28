@@ -36,7 +36,9 @@ class EditorToolbar extends StatelessWidget {
     // As the title bar, the colour is painted behind the controls by the window's drag and zoom
     // surface (below), so a press on empty space reaches it.
     final colour = titlebar ? null : palette.panel;
-    final bar = editor.layout.compact ? _compact(colour, titlebar) : Container(
+    // A tablet lays out three columns but keeps the phone's three things in its bar.
+    final touch = editor.layout.compact || mobilePlatform;
+    final bar = touch ? _compact(colour, titlebar) : Container(
       height: Metrics.toolbarHeight,
       color: colour,
       padding: const EdgeInsets.symmetric(horizontal: Metrics.toolbarPadding),
@@ -402,8 +404,8 @@ void showMoreOptions(BuildContext anchor, EditorCommands commands) {
   final steps = editor.history.timeline;
   void open(Panel panel) => editor.layout.choosePanel(panel);
   final sections = <List<MenuItem>>[
-    // The compact toolbar's histogram and Reset.
-    if (editor.layout.compact)
+    // What the three-part bar has no room for: the histogram and Reset.
+    if (editor.layout.compact || mobilePlatform)
       [
         MenuItem(
           label: 'Histogram',

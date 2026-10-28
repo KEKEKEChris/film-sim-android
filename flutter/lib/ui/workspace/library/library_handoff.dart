@@ -57,7 +57,7 @@ class _LibraryHandoffLayerState extends State<LibraryHandoffLayer> with TickerPr
     final layer = context.findRenderObject() as RenderBox?;
     if (box == null || layer == null || !box.attached) return null;
     final room = box.localToGlobal(Offset.zero, ancestor: layer) & box.size;
-    const inset = ViewState.fitInset;
+    final inset = ViewState.fitInset;
     final fit = math.min((room.width - inset * 2) / aspect, room.height - inset * 2);
     return Rect.fromCenter(center: room.center, width: fit * aspect, height: fit);
   }

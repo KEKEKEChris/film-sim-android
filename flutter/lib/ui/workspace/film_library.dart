@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/widgets.dart';
 
+import '../../app/touch_scale.dart' show mobilePlatform;
 import '../../model/editor.dart';
 import '../../model/l10n.dart';
 import '../../model/negative_document.dart';
@@ -126,8 +127,9 @@ class _FilmLibraryState extends State<FilmLibrary> {
             ]),
           ),
         Expanded(child: editor.presetsTab ? PresetList(editor: editor, open: open) : _list(open)),
-        // A phone's drawer is where Add media lives: the toolbar keeps three things only.
-        if (editor.layout.compact && open)
+        // A phone's drawer, and a tablet's left rail, is where Add media lives: the bar keeps three
+        // things only.
+        if (open && (editor.layout.compact || mobilePlatform))
           _AddMediaBar(editor: editor, onGallery: widget.onGallery, onFiles: widget.onFiles),
       ]),
     );

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The desktop app's colour bands (web/public/app-icon.png), full bleed: the launcher's mask shows
-     their middle, as the Mac's squircle does. -->
+<!-- The mark — a rounded square, a ring, and the ring's left half filled — on the warm page. The
+     launcher's mask shows the middle of the 108 dp foreground, as the Mac's squircle does. -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background android:drawable="@drawable/ic_launcher_bands" />
-    <foreground android:drawable="@android:color/transparent" />
+    <background android:drawable="@color/ic_launcher_background" />
+    <foreground android:drawable="@drawable/ic_launcher_foreground" />
 </adaptive-icon>
