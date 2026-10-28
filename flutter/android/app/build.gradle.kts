@@ -49,6 +49,16 @@ android {
     // debug keys, so `flutter run --release` works on a phone.
     val keystore = setting("FOTUFILM_ANDROID_KEYSTORE")
     signingConfigs {
+        // The debug keys are the ones in the tree, not the ones a machine happens to have made:
+        // each CI runner makes a new ~/.android/debug.keystore, so every build was signed with a
+        // different key and could not replace the last — INSTALL_FAILED_UPDATE_INCOMPATIBLE. This
+        // is the well-known Android debug key (password "android"), not a secret.
+        getByName("debug") {
+            storeFile = file("keystores/debug.p12")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
         if (keystore != null) {
             create("release") {
                 storeFile = file(keystore)
