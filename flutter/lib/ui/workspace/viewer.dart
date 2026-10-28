@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import '../../model/editor.dart';
+import '../../model/l10n.dart';
 import '../theme/theme.dart';
 import 'histogram_panel.dart';
 import 'library/library_handoff.dart';
@@ -57,6 +58,9 @@ class EditorViewer extends StatelessWidget {
               // What Auto Adjust is doing.
               if (editor.status == null && editor.auto.status != null)
                 StatusPill(text: editor.auto.status!),
+              // The picture on screen is the previous one until this arrives.
+              if (editor.status == null && editor.auto.status == null && editor.developing)
+                StatusPill(text: t('Developing…'), busy: true),
               if (editor.error != null)
                 ErrorBanner(
                   text: editor.error!,

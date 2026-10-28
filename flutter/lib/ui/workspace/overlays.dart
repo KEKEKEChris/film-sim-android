@@ -60,10 +60,13 @@ class OriginalBadge extends StatelessWidget {
 }
 
 class StatusPill extends StatelessWidget {
-  const StatusPill({super.key, required this.text, this.onCancel});
+  const StatusPill({super.key, required this.text, this.onCancel, this.busy = false});
   final String text;
   /// Shows Cancel (the import pill's).
   final VoidCallback? onCancel;
+  /// A turning ring before the text: something is being worked on rather than waiting for the
+  /// reader.
+  final bool busy;
 
   @override
   Widget build(BuildContext context) => Positioned(
@@ -82,6 +85,17 @@ class StatusPill extends StatelessWidget {
               ],
             ),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
+              if (busy) ...[
+                SizedBox(
+                  width: 12,
+                  height: 12,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 1.6,
+                    valueColor: AlwaysStoppedAnimation(Palette.of(context).accent),
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
               Text(text, style: editorText(context)),
               if (onCancel != null) ...[
                 const SizedBox(width: 6),

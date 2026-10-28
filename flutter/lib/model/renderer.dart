@@ -49,6 +49,10 @@ abstract interface class RenderHost {
   void rendered();
   void renderFailed(String message);
   void measured(HistogramData? histogram);
+
+  /// Whether the photograph on screen is waiting for a develop: what is drawn is the previous
+  /// picture until the new one arrives, which the viewer says so.
+  void developingChanged(bool developing);
 }
 
 class Renderer {
@@ -195,6 +199,17 @@ class Renderer {
       'photo:${doc.handle}|${options['cropMode'] == true ? 'crop' : 'photo'}|${options['stage'] ?? ''}';
 
   Future<void> _preview(PhotoDocument doc, bool interactive) async {
+    // A settled develop is one the reader is waiting for; a draft follows a control, which has its
+    // own picture already.
+    if (!interactive) host.developingChanged(true);
+    try {
+      await _developPreview(doc, interactive);
+    } finally {
+      if (!interactive) host.developingChanged(false);
+    }
+  }
+
+  Future<void> _developPreview(PhotoDocument doc, bool interactive) async {
     final options = host.renderOptions(doc);
     final signature = _signature(doc, options);
     final edge = _previewEdge(doc, interactive, whole: options.containsKey('printFrame'));
@@ -378,10 +393,29 @@ class Renderer {
     final tried = <String>{};
     var made = 0;
     while (true) {
+      // The photograph on screen comes first, always: a film the reader chose is developed at
+      // once and the strip waits, rather than the other way round. The pass picks up again after
+      // the preview has been developed.
+      if (_dirty) {
+        _moreShown = true;
+        debugPrint('latent strip: yielded after $made of ${keys.length}');
+        return;
+      }
+      // Eight films a pass, so the engine is never held for longer than a reader would wait: a
+      // picture asked for in between goes ahead of the next eight.
+      if (made >= _stripBatch) {
+        _moreShown = true;
+        debugPrint('latent strip: $made of ${keys.length} in ${clock.elapsedMilliseconds} ms, '
+            'next eight');
+        return;
+      }
       final shown = host.shownFilmRows;
       final wanted = wholeStrip ? keys : keys.where(shown.contains).toList();
       bool open(String k) => !set.fresh.contains(k) && !tried.contains(k);
-      final key = wanted.where((k) => open(k) && shown.contains(k)).firstOrNull ??
+      // The film in use, then the rows on screen, then the rest.
+      final chosen = doc.edit['stock'] as String?;
+      final key = (chosen != null && open(chosen) && wanted.contains(chosen) ? chosen : null) ??
+          wanted.where((k) => open(k) && shown.contains(k)).firstOrNull ??
           wanted.where(open).firstOrNull;
       if (key == null) break;
       tried.add(key);
@@ -411,6 +445,9 @@ class Renderer {
 
   /// The strip's pictures: as wide as a tile, and no larger.
   static const _stripEdge = 160;
+
+  /// How many films a pass develops before it hands the engine back.
+  static const _stripBatch = 8;
 
   /// Each preset row: the photograph with the preset pasted on, without grain or halation.
   Future<void> _presetThumbnails(PhotoDocument doc) async {

@@ -290,6 +290,17 @@ class EditorModel extends ChangeNotifier implements RenderHost {
     notifyListeners();
   }
 
+  /// Whether the photograph on screen is waiting for the develop of an edit or a film that was
+  /// just chosen: the canvas still holds the previous picture until the new one arrives.
+  bool developing = false;
+
+  @override
+  void developingChanged(bool value) {
+    if (developing == value) return;
+    developing = value;
+    notifyListeners();
+  }
+
   // ── Start-up ──────────────────────────────────────────────────────────────────────────────
 
   Future<void> start() async {
