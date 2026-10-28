@@ -308,7 +308,11 @@ class Renderer {
 
   Future<void> _runBackground() async {
     final doc = host.active;
-    if (doc == null || _running || playing || doc.history.group != null) return;
+    if (doc == null || _running || playing || doc.history.group != null) {
+      debugPrint('latent background skipped: doc=${doc != null} running=$_running '
+          'playing=$playing grouping=${doc?.history.group != null}');
+      return;
+    }
     _running = true;
     _moreShown = false;
     try {
@@ -363,16 +367,21 @@ class Renderer {
       for (final s in host.stocks)
         if (!negative || s['readsNegative'] == true) s['id'] as String,
     ];
-    for (final (index, key) in keys.indexed) {
+    final clock = Stopwatch()..start();
+    var made = 0;
+    for (final key in keys) {
       if (set.fresh.contains(key)) continue;
       // A newer edit or another photograph takes over: this pass's pictures would be of the old
       // one, and the next pass renews the set and starts again.
-      if (host.active != doc || set.signature != signature) return;
+      if (host.active != doc || set.signature != signature) {
+        debugPrint('latent strip: abandoned after $made of ${keys.length}');
+        return;
+      }
       await _thumbnail(doc, set, key, thumbnailEdit(doc.edit, key.isEmpty ? null : key),
           _stripEdge, notify: false);
-      // The strip fills as it goes, without a rebuild for every film.
-      if (index % 8 == 7) host.rendered();
+      made++;
     }
+    debugPrint('latent strip: $made of ${keys.length} in ${clock.elapsedMilliseconds} ms');
     host.rendered();
   }
 
@@ -430,7 +439,11 @@ class Renderer {
         'original': false,
       });
       final bytes = answer.bytes('preview');
-      if (bytes != null) set.images[key] = await decodePng(bytes);
+      if (bytes == null) {
+        debugPrint('latent strip: ${key.isEmpty ? 'normal' : key} answered no picture');
+      } else {
+        set.images[key] = await decodePng(bytes);
+      }
       if (notify) host.rendered();
     } catch (e) {
       // The row keeps what it showed. The log says which film, and why.
