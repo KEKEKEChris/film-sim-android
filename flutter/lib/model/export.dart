@@ -22,11 +22,13 @@ import 'export_sizes.dart';
 
 export 'export_sizes.dart';
 
-/// The still formats the desktop engine may write, in the order the dialog lists them.
+/// The still formats the desktop engine may write, in the order the dialog lists them. JPEG leads
+/// because it is what a photograph arrives as: a twelve-megapixel PNG of a grainy film is ten
+/// times the file a camera wrote, and takes ten times as long to encode.
 const exportTypeLabels = {
+  'image/jpeg': 'JPEG',
   'image/png': 'PNG',
   'image/tiff': 'TIFF · 16-bit',
-  'image/jpeg': 'JPEG',
   'image/heic': 'HEIC',
   'image/webp': 'WebP',
 };
@@ -112,10 +114,11 @@ class ExportTool {
   ExportTool(this.editor);
   final EditorModel editor;
 
-  // The dialog's choices, kept while the editor is open.
-  String type = 'image/png';
+  // The dialog's choices, kept while the editor is open. JPEG at 90 leads: a photograph arrives as
+  // a JPEG, and a PNG of the same frame is several times the file and far slower to write.
+  String type = 'image/jpeg';
   String size = 'full';
-  int quality = 95;
+  int quality = 90;
   String metadata = 'preserveWithoutLocation';
 
   /// A movie's format, one of [videoTypes].

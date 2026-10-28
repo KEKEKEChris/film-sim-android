@@ -5,7 +5,7 @@ import 'package:flutter/widgets.dart';
 
 import '../../model/editor.dart';
 import '../theme/theme.dart';
-import 'film_library.dart' show StripTile;
+import 'film_library.dart' show ShownFilmRow, StripTile;
 
 class FilmStripOverlay extends StatefulWidget {
   const FilmStripOverlay({super.key, required this.editor});
@@ -71,13 +71,19 @@ class _FilmStripOverlayState extends State<FilmStripOverlay> {
           final id = stock?['id'] as String?;
           return Align(
             alignment: Alignment.centerLeft,
-            child: StripTile(
-              name: stock?['name'] as String? ?? 'Normal',
-              thumbnail: doc.filmThumbnails[id ?? ''] ?? doc.importPicture,
-              selected: id == selected,
-              thumb: 52,
-              nameLines: 1,
-              onPressed: () => editor.chooseStock(id),
+            // Registered as shown, so the engine develops this film's picture at all: a row it
+            // never hears about stays on the imported photograph.
+            child: ShownFilmRow(
+              editor: editor,
+              id: id ?? '',
+              child: StripTile(
+                name: stock?['name'] as String? ?? 'Normal',
+                thumbnail: doc.filmThumbnails[id ?? ''] ?? doc.importPicture,
+                selected: id == selected,
+                thumb: 52,
+                nameLines: 1,
+                onPressed: () => editor.chooseStock(id),
+              ),
             ),
           );
         },

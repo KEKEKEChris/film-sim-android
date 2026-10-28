@@ -46,6 +46,11 @@ public final class HostImage {
     /// demosaic), as the Mac app decodes an uncropped preview; nil where it reduces the full decode.
     var decodeReduced: ((_ longEdge: Int) throws -> (rgba: [Float], width: Int, height: Int))?
     private let lock = NSLock()
+
+    /// Reductions no longer than this are the small pictures — the film strip's, the preset rows' —
+    /// and are kept ahead of the preview's own.
+    private let smallEdge = 512
+
     /// The most recent reductions, least recently used first: the settled preview, a moving
     /// edit's drafts and the film strip's thumbnails. A draft was made from another reduction.
     private var reductions: [(width: Int, height: Int, rgba: [Float], draft: Bool)] = []
@@ -165,7 +170,17 @@ public final class HostImage {
             ?? AreaResample.reduce(source.rgba, width: source.width, height: source.height,
                                    to: targetWidth, targetHeight)
         reductions.append((targetWidth, targetHeight, reduced, covering != nil))
-        if reductions.count > 4 { reductions.removeFirst() }
+        // The film strip asks for a hundred and sixty points on every film, and a preview that
+        // settles evicts the least recent reductions. Dropping a small one makes the next film
+        // reduce the whole photograph again, which is what made the strip crawl; so the small
+        // ones are kept and the largest gives way instead.
+        if reductions.count > 8 {
+            if let index = reductions.firstIndex(where: { max($0.width, $0.height) > smallEdge }) {
+                reductions.remove(at: index)
+            } else {
+                reductions.removeFirst()
+            }
+        }
         return reduced
     }
 }

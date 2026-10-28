@@ -157,7 +157,7 @@ class _FilmLibraryState extends State<FilmLibrary> {
           return Padding(
             padding: EdgeInsets.only(
                 bottom: stock == null ? Metrics.normalRowGap : Metrics.stockRowGap),
-            child: _ShownRow(
+            child: ShownFilmRow(
               editor: editor,
               id: id ?? '',
               child: StockRow(
@@ -203,7 +203,7 @@ class _FilmLibraryState extends State<FilmLibrary> {
         final id = stock?['id'] as String?;
         return Padding(
           padding: const EdgeInsets.only(right: Metrics.filmStripGap),
-          child: _ShownRow(
+          child: ShownFilmRow(
             editor: editor,
             id: id ?? '',
             child: StripTile(
@@ -502,17 +502,18 @@ class _StockRowState extends State<StockRow> with PointerTint {
 }
 
 /// Tells the editor while a film row is on screen, so only shown rows develop their pictures.
-class _ShownRow extends StatefulWidget {
-  const _ShownRow({required this.editor, required this.id, required this.child});
+/// The drawer's list, its strip and the strip floating over the canvas all use it.
+class ShownFilmRow extends StatefulWidget {
+  const ShownFilmRow({super.key, required this.editor, required this.id, required this.child});
   final EditorModel editor;
   final String id;
   final Widget child;
 
   @override
-  State<_ShownRow> createState() => _ShownRowState();
+  State<ShownFilmRow> createState() => _ShownFilmRowState();
 }
 
-class _ShownRowState extends State<_ShownRow> {
+class _ShownFilmRowState extends State<ShownFilmRow> {
   @override
   void initState() {
     super.initState();
@@ -520,7 +521,7 @@ class _ShownRowState extends State<_ShownRow> {
   }
 
   @override
-  void didUpdateWidget(_ShownRow old) {
+  void didUpdateWidget(ShownFilmRow old) {
     super.didUpdateWidget(old);
     if (old.id == widget.id) return;
     widget.editor
