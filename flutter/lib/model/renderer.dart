@@ -373,13 +373,18 @@ class Renderer {
     // worth a third of a second each; the rest come back as they are scrolled to.
     final wholeStrip = set.images.isEmpty;
     final clock = Stopwatch()..start();
+    // Tried once each in a pass: a film whose develop failed is left for the next pass rather
+    // than asked again and again here.
+    final tried = <String>{};
     var made = 0;
     while (true) {
       final shown = host.shownFilmRows;
       final wanted = wholeStrip ? keys : keys.where(shown.contains).toList();
-      final key = wanted.where((k) => !set.fresh.contains(k) && shown.contains(k)).firstOrNull ??
-          wanted.where((k) => !set.fresh.contains(k)).firstOrNull;
+      bool open(String k) => !set.fresh.contains(k) && !tried.contains(k);
+      final key = wanted.where((k) => open(k) && shown.contains(k)).firstOrNull ??
+          wanted.where(open).firstOrNull;
       if (key == null) break;
+      tried.add(key);
       // A newer edit or another photograph takes over: this pass's pictures would be of the old
       // one, and the next pass renews the set and starts again.
       if (host.active != doc || set.signature != signature) {
@@ -395,6 +400,13 @@ class Renderer {
     }
     debugPrint('latent strip: $made of ${keys.length} in ${clock.elapsedMilliseconds} ms');
     host.rendered();
+    // A film whose kernels were still compiling when it was asked is asked again, once, after the
+    // rest have had their turn: only while pictures are still arriving, so a film that cannot be
+    // developed at all does not keep the pass running forever.
+    if (made > 0 && set.fresh.length < keys.length) {
+      _background?.cancel();
+      _background = Timer(const Duration(seconds: 2), _runBackground);
+    }
   }
 
   /// The strip's pictures: as wide as a tile, and no larger.
@@ -455,13 +467,15 @@ class Renderer {
         debugPrint('latent strip: ${key.isEmpty ? 'normal' : key} answered no picture');
       } else {
         set.images[key] = await decodePng(bytes);
+        // Only a film with a picture is done with: one that failed is asked again next pass,
+        // which is how the films whose kernels are still compiling get their picture.
+        set.fresh.add(key);
       }
       if (notify) host.rendered();
     } catch (e) {
       // The row keeps what it showed. The log says which film, and why.
       debugPrint('latent strip: ${key.isEmpty ? 'normal' : key} failed: $e');
     }
-    set.fresh.add(key);
   }
 }
 

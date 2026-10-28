@@ -21,12 +21,30 @@ class _FilmStripOverlayState extends State<FilmStripOverlay> {
   /// Whether the strip has been brought round to the chosen film.
   bool _placed = false;
 
+  /// How many of the films had a picture when the strip last drew. A tile that arrives while the
+  /// strip is scrolled still has to be redrawn, and the strip is rebuilt for the picture rather
+  /// than for every notification the editor sends.
+  int _drawn = -1;
+
   EditorModel get editor => widget.editor;
 
   @override
+  void initState() {
+    super.initState();
+    editor.addListener(_picturesArrived);
+  }
+
+  @override
   void dispose() {
+    editor.removeListener(_picturesArrived);
     _scroll.dispose();
     super.dispose();
+  }
+
+  void _picturesArrived() {
+    final count = editor.active?.filmThumbnails.images.length ?? 0;
+    if (count == _drawn || !mounted) return;
+    setState(() => _drawn = count);
   }
 
   /// Every film, Normal first, as the library lists them.
@@ -37,6 +55,7 @@ class _FilmStripOverlayState extends State<FilmStripOverlay> {
     final palette = Palette.of(context);
     final doc = editor.active;
     if (doc == null) return const SizedBox.shrink();
+    _drawn = doc.filmThumbnails.images.length;
     final films = _films;
     final selected = editor.edit['stock'] as String?;
     const extent = Metrics.filmStripTile + Metrics.filmStripGap;
