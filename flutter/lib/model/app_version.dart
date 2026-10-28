@@ -7,6 +7,20 @@ abstract final class AppVersion {
   /// Release notes kept with the app so Settings can explain what changed in each upgrade.
   static const history = <({String version, String title, List<String> changes})>[
     (
+      version: '1.14.4',
+      title: 'A bar of three things, and films that float',
+      changes: [
+        'The mark is drawn in the appearance\'s own accent — amber in the warm darkroom, blue in Pure — '
+            'and the launcher icon is the same mark on the warm page.',
+        'On a phone the bar keeps three things: back, the film over the file name, and Export. Add media, '
+            'Undo and Redo move into More.',
+        'The films float over the foot of the canvas instead of taking a dock\'s height, and fade away as a '
+            'drawer opens, so the photograph has the whole screen.',
+        'A fitted photograph touches both ends of its room on a phone, with no band of black around it.',
+        'The splash is the warm page rather than white.',
+        'Every build is signed with one key, so it can be installed over the one before it.',
+      ],
+    ),    (
       version: '1.14.3',
       title: 'Warm darkroom and pure appearances',
       changes: [
