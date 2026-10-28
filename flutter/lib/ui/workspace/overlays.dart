@@ -86,14 +86,7 @@ class StatusPill extends StatelessWidget {
             ),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               if (busy) ...[
-                SizedBox(
-                  width: 12,
-                  height: 12,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 1.6,
-                    valueColor: AlwaysStoppedAnimation(Palette.of(context).accent),
-                  ),
-                ),
+                _Spinner(color: Palette.of(context).accent),
                 const SizedBox(width: 8),
               ],
               Text(text, style: editorText(context)),
@@ -191,4 +184,55 @@ class _DashedBorder extends CustomPainter {
 
   @override
   bool shouldRepaint(_DashedBorder old) => old.color != color;
+}
+
+
+/// A turning arc, for a pill that says work is under way. Drawn here rather than taken from the
+/// material library, which this editor does not build on.
+class _Spinner extends StatefulWidget {
+  const _Spinner({required this.color, this.size = 12});
+  final Color color;
+  final double size;
+
+  @override
+  State<_Spinner> createState() => _SpinnerState();
+}
+
+class _SpinnerState extends State<_Spinner> with SingleTickerProviderStateMixin {
+  late final AnimationController _turn =
+      AnimationController(vsync: this, duration: const Duration(milliseconds: 900))..repeat();
+
+  @override
+  void dispose() {
+    _turn.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        width: widget.size,
+        height: widget.size,
+        child: RotationTransition(
+          turns: _turn,
+          child: CustomPaint(painter: _ArcPainter(widget.color)),
+        ),
+      );
+}
+
+class _ArcPainter extends CustomPainter {
+  const _ArcPainter(this.color);
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.6
+      ..strokeCap = StrokeCap.round
+      ..color = color;
+    canvas.drawArc(Offset.zero & size, 0, 4.2, false, paint);
+  }
+
+  @override
+  bool shouldRepaint(_ArcPainter oldDelegate) => oldDelegate.color != color;
 }
